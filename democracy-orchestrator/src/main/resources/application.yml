@@ -1,0 +1,55 @@
+spring:
+  boot:
+    admin:
+      client:
+        instance:
+          management-base-url: http://localhost:8082
+  application:
+    name: democracy-orchestrator
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8181/realms/democracy_realm
+  cache:
+    jcache:
+      config: ehcache.xml
+  cloud:
+    config:
+      url: http://localhost:8888
+      profile: dev
+    vault:
+      application-name: ${spring.application.name}
+      host: localhost
+      port: 8200
+      scheme: http
+      authentication: TOKEN
+      token: 00000000-0000-0000-0000-000000000000
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+server:
+  port: 0
+
+eureka:
+  password: password
+  client:
+    serviceUrl:
+      defaultZone: http://user:${eureka.password}@localhost:8761/eureka/
+  instance:
+    instance-id: ${spring.application.name}:${random.uuid}
+    leaseRenewalIntervalInSeconds: 10
+    metadataMap:
+      instanceId: ${vcap.application.instance_id:${spring.application.name}:${spring.application.instance_id:${server.port}}}
+
+endpoints:
+  restart:
+    enabled: true
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: all
