@@ -15,20 +15,20 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/validatedepartment")
 public class ClientController {
 
-    @Autowired
+    //@Autowired
     private HelloClient client;
 
     @Autowired
     private OrderService orderService;
 
-    @PostMapping("/goal")
+    //@PostMapping("/goal")
     public String hello() {
 
         //Order returnOrder = orderService.newOrder(new Order());
         return "OK";
     }
 
-    @PostMapping("/new")
+    //@PostMapping("/new")
     public Mono<Order> newOrder(@RequestBody Order order){
 
         return Mono.just(orderService.newOrder(order));
