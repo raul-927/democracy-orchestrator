@@ -9,6 +9,8 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.BufferOverflowStrategy;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.util.List;
 
@@ -28,9 +30,9 @@ public class OrderServiceImpl implements OrderService {
     public Order newOrder(Order order) {
         initOrderSaga();
         validateOrder(order);
-        payOrder();
-        shipOrder();
-        completeOrder();
+       // payOrder();
+        //shipOrder();
+        //completeOrder();
         return order;
     }
     @Override
@@ -42,13 +44,19 @@ public class OrderServiceImpl implements OrderService {
     }
     @Override
     public void validateOrder(Order order) {
-        List<Department> departments = departmentService.selectAllDepartment();
-        stateMachine.sendEvent(Mono.just(
-                        MessageBuilder.withPayload(OrderEvents.VALIDATE)
-                                .setHeader("order",order)
-                                .setHeader("departmentList", departments).build()))
-                .subscribe(result -> System.out.println("RESULT validateOrder: "+result.getResultType()));
-        System.out.println("Final state validateOrder: "+stateMachine.getState().getId());
+        System.out.println("PROCESADORES: "+Runtime.getRuntime().availableProcessors());
+        System.out.println("Validate order...");
+        Flux<Department> departments = departmentService.selectAllDepartment();
+        departments.doOnComplete(()->{
+            stateMachine.sendEvent(Mono.just(
+                            MessageBuilder.withPayload(OrderEvents.VALIDATE)
+                                    .setHeader("order",order)
+                                    .setHeader("departmentList", departments).build()))
+                    .doOnComplete(this::stopOrderSaga)
+                    .subscribe(result -> System.out.println("RESULT validateOrder: "+result.getResultType()));
+            System.out.println("Final state validateOrder: "+stateMachine.getState().getId());
+        }).subscribe(rr-> System.out.println("RESULTADO: "+rr));
+
     }
     @Override
     public void payOrder() {

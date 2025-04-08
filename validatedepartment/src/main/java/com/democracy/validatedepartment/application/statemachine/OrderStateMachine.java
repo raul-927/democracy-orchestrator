@@ -18,6 +18,8 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.transition.Transition;
+import reactor.core.publisher.BufferOverflowStrategy;
+import reactor.core.publisher.Flux;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -25,6 +27,7 @@ import java.util.List;
 @Configuration
 @EnableStateMachineFactory(name = "orderStateMachineFactory")
 public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderStates, OrderEvents> {
+
 
     @Override
     public void configure(StateMachineStateConfigurer<OrderStates, OrderEvents> states)throws Exception{
@@ -49,19 +52,19 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
                 .withExternal()
                     .source(OrderStates.VALIDATED)
                     .target(OrderStates.PAID)
-                    .event(OrderEvents.PAY)
+                    //.event(OrderEvents.PAY)
                     .action(payOrderAction())
                 .and()
                 .withExternal()
                     .source(OrderStates.PAID)
                     .target(OrderStates.SHIPPED)
-                    .event(OrderEvents.SHIP)
+                    //.event(OrderEvents.SHIP)
                     .action(shipOrderAction())
                 .and()
                 .withExternal()
                     .source(OrderStates.SHIPPED)
                     .target(OrderStates.COMPLETED)
-                    .event(OrderEvents.COMPLETE)
+                    //.event(OrderEvents.COMPLETE)
                 .and()
                 .withExternal()
                     .source(OrderStates.VALIDATED)
@@ -110,13 +113,24 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
     public Action<OrderStates, OrderEvents> validateOrderAction() {
         return context ->{
            Order order = (Order) context.getMessageHeader("order");
-            List<Department> departments = (List<Department>) context.getMessageHeader("departmentList");
-            departments.forEach(department -> {
+            Flux<Department> departments = (Flux<Department>) context.getMessageHeader("departmentList");
+            departments
+                    //.onBackpressureBuffer(100000, BufferOverflowStrategy.DROP_OLDEST)
+                    .doOnNext(dept->{
+                        System.out.println("DEPARTMENT doOnNext: "+dept.getDepartmentName());
+                    })
+                    .doOnComplete(()-> System.out.println("doOnComplete Validating order Action: "+order.getOrderId() + ", "+order.getOrderType() + ", "+order.getProduct().getProductId()+", "+order.getProduct().getProductName()))
+                    .subscribe(dep-> {
+                        System.out.println("DEPARTMENT_NAME IN validateOrderAction: "+dep.getDepartmentName());
+                        System.out.println("DEPARTMENT_id IN validateOrderAction: "+dep.getDepartmentId());
+
+                    });
+            /*departments.forEach(department -> {
                 System.out.println("DEPARTMENT_id IN validateOrderAction: "+department.getDepartmentId());
                 System.out.println("DEPARTMENT_NAME IN validateOrderAction: "+department.getDepartmentName());
-            });
+            });*/
 
-            System.out.println("Validating order Action: "+order.getOrderId() + ", "+order.getOrderType() + ", "+order.getProduct().getProductId()+", "+order.getProduct().getProductName());
+
         };
     }
 }

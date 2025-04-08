@@ -4,6 +4,7 @@ import com.democracy.validatedepartment.domain.models.Department;
 import com.democracy.validatedepartment.domain.ports.in.humanresources.department.SelectDepartmentIn;
 import com.democracy.validatedepartment.domain.ports.out.humanresources.DepartmentOut;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -16,7 +17,7 @@ public class SelectDepartmentUseCase implements SelectDepartmentIn {
     }
 
     @Override
-    public List<Department> selectAllDepartment() {
+    public Flux<Department> selectAllDepartment() {
         return this.departmentOut.selectAllDepartment();
     }
 }
