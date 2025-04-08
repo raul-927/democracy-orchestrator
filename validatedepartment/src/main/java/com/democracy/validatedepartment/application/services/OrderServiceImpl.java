@@ -48,14 +48,15 @@ public class OrderServiceImpl implements OrderService {
         System.out.println("Validate order...");
         Flux<Department> departments = departmentService.selectAllDepartment();
         departments.doOnComplete(()->{
+            System.out.println("Send event.... VALIDATE");
+            stateMachine.getExtendedState().getVariables().put("isComplete", true);
             stateMachine.sendEvent(Mono.just(
                             MessageBuilder.withPayload(OrderEvents.VALIDATE)
                                     .setHeader("order",order)
                                     .setHeader("departmentList", departments).build()))
-                    .doOnComplete(this::stopOrderSaga)
-                    .subscribe(result -> System.out.println("RESULT validateOrder: "+result.getResultType()));
-            System.out.println("Final state validateOrder: "+stateMachine.getState().getId());
-        }).subscribe(rr-> System.out.println("RESULTADO: "+rr));
+                    .subscribe();
+            //System.out.println("Final state validateOrder: "+stateMachine.getState().getId());
+        }).subscribe();
 
     }
     @Override
@@ -79,6 +80,7 @@ public class OrderServiceImpl implements OrderService {
         System.out.println("Completing order.");
         stateMachine.sendEvent(Mono.just(
                         MessageBuilder.withPayload(OrderEvents.COMPLETE).build()))
+                .doOnComplete(this::stopOrderSaga)
                 .subscribe(result -> System.out.println("RESULT completeOrder: "+result.getResultType()));
         System.out.println("Final state completeOrder: "+stateMachine.getState().getId());
         stopOrderSaga();
