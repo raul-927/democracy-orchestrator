@@ -15,22 +15,29 @@ import org.springframework.transaction.annotation.Transactional;
 //@Transactional
 public class OrderStatusListener {
     @OnTransition(source = "NEW", target = "VALIDATED")
-    public boolean payTransition(Message message) {
-        System.out.println("pay，feedback by statemachine：" + message.getHeaders().toString());
+    public boolean validatedTransition(Message message) {
+        System.out.println("validatedTransition： " + message.getHeaders().toString());
         return true;
     }
 
-    @OnTransition(source = "WAIT_DELIVER", target = "WAIT_RECEIVE")
-    public boolean deliverTransition(Message message) {
+    @OnTransition(source = "VALIDATED", target = "PAID")
+    public boolean paidTransition(Message message) {
 
-        System.out.println("deliver，feedback by statemachine：" + message.getHeaders().toString());
+        System.out.println("paidTransition： " + message.getHeaders().toString());
         return true;
     }
 
-    @OnTransition(source = "WAIT_RECEIVE", target = "FINISH")
-    public boolean receiveTransition(Message message) {
+    @OnTransition(source = "PAID", target = "SHIPPED")
+    public boolean shippedTransition(Message message) {
 
-        System.out.println("receive，feedback by statemachine：" + message.getHeaders().toString());
+        System.out.println("shippedTransition： " + message.getHeaders().toString());
+        return true;
+    }
+
+    @OnTransition(source = "SHIPPED", target = "COMPLETED")
+    public boolean completedTransition(Message message) {
+
+        System.out.println("completedTransition： " + message.getHeaders().toString());
         return true;
     }
 

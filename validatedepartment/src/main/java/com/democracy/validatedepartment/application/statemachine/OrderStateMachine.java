@@ -9,15 +9,18 @@ import com.democracy.validatedepartment.application.statemachine.events.OrderEve
 import com.democracy.validatedepartment.application.statemachine.states.OrderStates;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
+import org.springframework.statemachine.guard.ReactiveGuard;
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.transition.Transition;
+import reactor.core.publisher.Mono;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -93,23 +96,9 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
     }
 
     @Bean
-    public Action<OrderStates, OrderEvents> shipOrderAction() {
-        return context ->{
-            System.out.println("Shipping order Action");
-        };
-    }
-
-    @Bean
-    public Action<OrderStates, OrderEvents> payOrderAction() {
-        return context ->{
-            System.out.println("Paying order Action");
-        };
-    }
-
-    @Bean
     public Action<OrderStates, OrderEvents> validateOrderAction() {
         return context ->{
-           Order order = (Order) context.getMessageHeader("order");
+            Order order = (Order) context.getMessageHeader("order");
             List<Department> departments = (List<Department>) context.getMessageHeader("departmentList");
             departments.forEach(department -> {
                 System.out.println("DEPARTMENT_id IN validateOrderAction: "+department.getDepartmentId());
@@ -119,4 +108,38 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
             System.out.println("Validating order Action: "+order.getOrderId() + ", "+order.getOrderType() + ", "+order.getProduct().getProductId()+", "+order.getProduct().getProductName());
         };
     }
+
+    @Bean
+    public Action<OrderStates, OrderEvents> payOrderAction() {
+        return context ->{
+            /*System.out.println("Paying order...");
+            context.getStateMachine().sendEvent(Mono.just(
+                            MessageBuilder.withPayload(OrderEvents.PAY).build()))
+                    .subscribe(result -> System.out.println("RESULT payOrder: "+result.getResultType()));
+            System.out.println("Final state payOrder: "+context.getStateMachine().getState().getId());*/
+            System.out.println("Paying order Action");
+        };
+    }
+
+    @Bean
+    public Action<OrderStates, OrderEvents> shipOrderAction() {
+        return context ->{
+           /* System.out.println("Shipping order...");
+            context.getStateMachine().sendEvent(Mono.just(
+                            MessageBuilder.withPayload(OrderEvents.SHIP).build()))
+                    .subscribe(result -> System.out.println("RESULT shipOrder: "+result.getResultType()));
+            System.out.println("Final state: shipOrder "+context.getStateMachine().getState().getId());*/
+            System.out.println("Shipping order Action");
+        };
+    }
+
+
+    @Bean
+    public ReactiveGuard<OrderStates, OrderEvents> bookingIdGuard(){
+        return context -> Mono.just(context.getStateMachine().getState().equals(OrderStates.NEW));
+    }
+
+
+
+
 }

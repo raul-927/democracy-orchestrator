@@ -42,6 +42,7 @@ public class OrderServiceImpl implements OrderService {
     }
     @Override
     public void validateOrder(Order order) {
+        System.out.println("Validating order...");
         List<Department> departments = departmentService.selectAllDepartment();
         stateMachine.sendEvent(Mono.just(
                         MessageBuilder.withPayload(OrderEvents.VALIDATE)
@@ -68,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
     }
     @Override
     public void completeOrder() {
-        System.out.println("Completing order.");
+        System.out.println("Completing order...");
         stateMachine.sendEvent(Mono.just(
                         MessageBuilder.withPayload(OrderEvents.COMPLETE).build()))
                 .subscribe(result -> System.out.println("RESULT completeOrder: "+result.getResultType()));
