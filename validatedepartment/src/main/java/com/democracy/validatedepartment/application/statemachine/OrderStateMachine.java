@@ -39,7 +39,7 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
                 .withStates()
                 .initial(OrderStates.NEW)
                 .states(EnumSet.allOf(OrderStates.class))
-                .end(OrderStates.COMPLETED)
+                .end(OrderStates.STATE_MACHINE_STOPED)
                 .end(OrderStates.CANCELLED);
 
     }
@@ -52,12 +52,12 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
                     .target(OrderStates.VALIDATED)
                     .event(OrderEvents.VALIDATE)
                     .action(validateOrderAction())
-                    .guard(guard1())
+                    //.guard(guard1())
                 .and()
                 .withExternal()
                     .source(OrderStates.VALIDATED)
                     .target(OrderStates.PAID)
-                    //.event(OrderEvents.PAY)
+                    .event(OrderEvents.PAY)
                     .action(payOrderAction())
                 .and()
                 .withExternal()
@@ -71,6 +71,12 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
                     .target(OrderStates.COMPLETED)
                     //.event(OrderEvents.COMPLETE)
                 .action(completeOrder())
+                .and()
+                .withExternal()
+                .source(OrderStates.COMPLETED)
+                .target(OrderStates.STATE_MACHINE_STOPED)
+                //.event(OrderEvents.STOP_STATE_MACHINE)
+                .action(stopStateMachine())
                 .and()
                 .withExternal()
                     .source(OrderStates.VALIDATED)
@@ -108,7 +114,16 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
             System.out.println("Init action validateOrderAction...");
 
             Flux<Department> departmentFlux = (Flux<Department>)context.getMessageHeader("departmentList");
-            departmentFlux.subscribe(dep->{
+
+            departmentFlux.doOnComplete(()->{
+                System.out.println("ESTADO ACTUAL: "+context.getStateMachine().getState());
+                System.out.println("Send event.... PAY");
+                context.getExtendedState().getVariables().put("isComplete", true);
+               context.getStateMachine().sendEvent(Mono.just(
+                                MessageBuilder.withPayload(OrderEvents.PAY).build()))
+                        .doOnComplete(()->System.out.println("Final Send Event PAY in validateOrderAction: "+context.getStateMachine().getState().getId()))
+                        .subscribe(result -> System.out.println("RESULT send Event PAY in validateOrderAction: "+result.getResultType()));
+            }).subscribe(dep->{
                 System.out.println("DEPARTMENT_ID: "+dep.getDepartmentId());
                 System.out.println("DEPARTMENT_NAME: "+dep.getDepartmentName());
             });
@@ -119,10 +134,11 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
     public Action<OrderStates, OrderEvents> payOrderAction() {
         return context ->{
             System.out.println("Init action payOrderAction...");
+            System.out.println("Send SHIP event...");
             /*context.getStateMachine().sendEvent(Mono.just(
                             MessageBuilder.withPayload(OrderEvents.SHIP).build()))
-                    .doOnComplete(()->System.out.println("Final action payOrderAction: "+context.getStateMachine().getState().getId()))
-                    .subscribe(result -> System.out.println("RESULT shipOrder: "+result.getResultType()));*/
+                    .doOnComplete(()->System.out.println("Final Send Event SHIP in payOrderAction: "+context.getStateMachine().getState().getId()))
+                    .subscribe(result -> System.out.println("RESULT send Event SHIP in payOrderAction: "+result.getResultType()));*/
         };
 
     }
@@ -131,23 +147,27 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
     public Action<OrderStates, OrderEvents> shipOrderAction() {
         return context ->{
             System.out.println("Init action shipOrderAction...");
+            System.out.println("Send event.... COMPLETE");
             /*context.getStateMachine().sendEvent(Mono.just(
                             MessageBuilder.withPayload(OrderEvents.COMPLETE).build()))
-                    .doOnComplete(()->System.out.println("Final action shipOrderAction: "+context.getStateMachine().getState().getId()))
-                    .subscribe(result -> System.out.println("RESULT completeOrder: "+result.getResultType()));*/
+                    .doOnComplete(()->System.out.println("Final Send Event COMPLETE in shipOrderAction: "+context.getStateMachine().getState().getId()))
+                    .subscribe(result -> System.out.println("RESULT send Event COMPLETE in shipOrderAction: "+result.getResultType()));*/
         };
     }
 
     public  Action<OrderStates, OrderEvents> completeOrder(){
         return context ->{
-            System.out.println("Final state completeOrder: "+context.getStateMachine().getState().getId());
-            System.out.println("------------------------");
-            context.getStateMachine().stopReactively().subscribe();
+            System.out.println("Init action completeOrder...");
+            System.out.println("Send event.... STOP_STATE_MACHINE");
+            /*context.getStateMachine().sendEvent(Mono.just(
+                            MessageBuilder.withPayload(OrderEvents.STOP_STATE_MACHINE).build()))
+                    .doOnComplete(()->System.out.println("Final Send Event STOP_STATE_MACHINE in completeOrder: "+context.getStateMachine().getState().getId()))
+                    .subscribe(result -> System.out.println("RESULT send Event STOP_STATE_MACHINE in completeOrder: "+result.getResultType()));*/
 
         };
     }
 
-    public  Action<OrderStates, OrderEvents> stopOrderSaga(){
+    public  Action<OrderStates, OrderEvents> stopStateMachine(){
         return context ->{
             System.out.println("Stopping saga...");
             System.out.println("------------------------");
@@ -164,7 +184,7 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
 
             @Override
             public boolean evaluate(StateContext<OrderStates, OrderEvents> context) {
-                    System.out.println("Init action validateOrderAction...");
+                    System.out.println("Init guard1 validateOrderAction...");
                     Order order = (Order) context.getMessageHeader("order");
                 return context.getStateMachine().getExtendedState().get("isComplete", Boolean.class);
             }

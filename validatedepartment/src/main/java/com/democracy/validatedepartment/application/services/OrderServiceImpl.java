@@ -44,19 +44,16 @@ public class OrderServiceImpl implements OrderService {
     }
     @Override
     public void validateOrder(Order order) {
-        System.out.println("PROCESADORES: "+Runtime.getRuntime().availableProcessors());
+        //System.out.println("PROCESADORES: "+Runtime.getRuntime().availableProcessors());
         System.out.println("Validate order...");
         Flux<Department> departments = departmentService.selectAllDepartment();
-        departments.doOnComplete(()->{
-            System.out.println("Send event.... VALIDATE");
-            stateMachine.getExtendedState().getVariables().put("isComplete", true);
-            stateMachine.sendEvent(Mono.just(
-                            MessageBuilder.withPayload(OrderEvents.VALIDATE)
-                                    .setHeader("order",order)
-                                    .setHeader("departmentList", departments).build()))
-                    .subscribe();
-            //System.out.println("Final state validateOrder: "+stateMachine.getState().getId());
-        }).subscribe();
+        System.out.println("Send event.... VALIDATE");
+        stateMachine.getExtendedState().getVariables().put("isComplete", true);
+        stateMachine.sendEvent(Mono.just(
+                        MessageBuilder.withPayload(OrderEvents.VALIDATE)
+                                .setHeader("order",order)
+                                .setHeader("departmentList", departments).build()))
+                .subscribe(result -> System.out.println("RESULT validateOrderService: "+result.getResultType()));
 
     }
     @Override
