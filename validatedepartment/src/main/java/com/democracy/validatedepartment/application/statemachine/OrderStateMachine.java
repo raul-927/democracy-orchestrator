@@ -88,7 +88,7 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
             public void transition(Transition<OrderStates, OrderEvents> transition){
                 System.out.println("LISTENER...");
                 if(transition!=null && transition.getSource()!=null && transition.getSource().getId()!=null){
-                    System.out.println("Transitioning form "+ transition.getSource().getId()
+                    System.out.println("Transitioning from "+ transition.getSource().getId()
                             +" to "+transition.getTarget().getId());
                 }
             };
