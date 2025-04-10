@@ -47,40 +47,66 @@ public class OrderServiceImpl implements OrderService {
         //System.out.println("PROCESADORES: "+Runtime.getRuntime().availableProcessors());
         System.out.println("Validate order...");
         Flux<Department> departments = departmentService.selectAllDepartment();
-        System.out.println("Send event.... VALIDATE");
-        stateMachine.getExtendedState().getVariables().put("isComplete", true);
-        stateMachine.sendEvent(Mono.just(
-                        MessageBuilder.withPayload(OrderEvents.VALIDATE)
-                                .setHeader("order",order)
-                                .setHeader("departmentList", departments).build()))
-                .subscribe(result -> System.out.println("RESULT validateOrderService: "+result.getResultType()));
-
+        departments.doOnComplete(()->{
+                    System.out.println("Send event.... VALIDATE");
+                    stateMachine.getExtendedState().getVariables().put("isComplete", true);
+                    stateMachine.sendEvent(Mono.just(
+                                    MessageBuilder.withPayload(OrderEvents.VALIDATE)
+                                            .setHeader("order",order)
+                                            .setHeader("departmentList", departments)
+                                            .build()))
+                            .doOnComplete(this::payOrder)
+                            .subscribe(result -> System.out.println("RESULT validateOrderService: "+result.getResultType()));
+                }).subscribe(dep ->{
+            System.out.println("DEPARTMENT_NAME IN validateOrderService: "+dep.getDepartmentName());
+        });
     }
     @Override
     public void payOrder() {
         System.out.println("Paying order...");
-        stateMachine.sendEvent(Mono.just(
-                        MessageBuilder.withPayload(OrderEvents.PAY).build()))
-                .subscribe(result -> System.out.println("RESULT payOrder: "+result.getResultType()));
-        System.out.println("Final state payOrder: "+stateMachine.getState().getId());
+        Flux<Department> departments = departmentService.selectAllDepartment();
+        departments.doOnComplete(()->{
+            stateMachine.sendEvent(Mono.just(
+                            MessageBuilder.withPayload(OrderEvents.PAY)
+                                    .setHeader("departmentList", departments)
+                                    .build()))
+                    .doOnComplete(this::shipOrder)
+                    .subscribe(result -> System.out.println("RESULT payOrder: "+result.getResultType()));
+                }).subscribe(dep->{
+            System.out.println("DEPARTMENT_NAME IN payOrderService: "+dep.getDepartmentName());
+        });
+
     }
     @Override
     public void shipOrder() {
         System.out.println("Shipping order...");
-        stateMachine.sendEvent(Mono.just(
-                        MessageBuilder.withPayload(OrderEvents.SHIP).build()))
-                .subscribe(result -> System.out.println("RESULT shipOrder: "+result.getResultType()));
-        System.out.println("Final state: shipOrder "+stateMachine.getState().getId());
+        Flux<Department> departments = departmentService.selectAllDepartment();
+        departments.doOnComplete(()->{
+            stateMachine.sendEvent(Mono.just(
+                            MessageBuilder.withPayload(OrderEvents.SHIP)
+                                    .setHeader("departmentList", departments)
+                                    .build()))
+                    .doOnComplete(this::completeOrder)
+                    .subscribe(result -> System.out.println("RESULT shipOrder: "+result.getResultType()));
+        }).subscribe(dep->{
+            System.out.println("DEPARTMENT_NAME IN shipOrderService: "+dep.getDepartmentName());
+        });
+
     }
     @Override
     public void completeOrder() {
-        System.out.println("Completing order.");
-        stateMachine.sendEvent(Mono.just(
-                        MessageBuilder.withPayload(OrderEvents.COMPLETE).build()))
-                .doOnComplete(this::stopOrderSaga)
-                .subscribe(result -> System.out.println("RESULT completeOrder: "+result.getResultType()));
-        System.out.println("Final state completeOrder: "+stateMachine.getState().getId());
-        stopOrderSaga();
+        System.out.println("Completing order...");
+        Flux<Department> departments = departmentService.selectAllDepartment();
+        departments.doOnComplete(()->{
+            stateMachine.sendEvent(Mono.just(
+                            MessageBuilder.withPayload(OrderEvents.COMPLETE)
+                                    .setHeader("departmentList", departments)
+                                    .build()))
+                    .doOnComplete(this::stopOrderSaga)
+                    .subscribe(result -> System.out.println("RESULT completeOrder: "+result.getResultType()));
+        }).subscribe(dep ->{
+            System.out.println("DEPARTMENT_NAME IN completeOrderService: "+dep.getDepartmentName());
+        });
     }
     @Override
     public void stopOrderSaga(){

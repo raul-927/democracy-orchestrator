@@ -63,19 +63,19 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
                 .withExternal()
                     .source(OrderStates.PAID)
                     .target(OrderStates.SHIPPED)
-                    //.event(OrderEvents.SHIP)
+                    .event(OrderEvents.SHIP)
                     .action(shipOrderAction())
                 .and()
                 .withExternal()
                     .source(OrderStates.SHIPPED)
                     .target(OrderStates.COMPLETED)
-                    //.event(OrderEvents.COMPLETE)
-                .action(completeOrder())
+                    .event(OrderEvents.COMPLETE)
+                .action(completeOrderAction())
                 .and()
                 .withExternal()
                 .source(OrderStates.COMPLETED)
                 .target(OrderStates.STATE_MACHINE_STOPED)
-                //.event(OrderEvents.STOP_STATE_MACHINE)
+                .event(OrderEvents.STOP_STATE_MACHINE)
                 .action(stopStateMachine())
                 .and()
                 .withExternal()
@@ -100,7 +100,7 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
             public void transition(Transition<OrderStates, OrderEvents> transition){
                 System.out.println("LISTENER...");
                 if(transition!=null && transition.getSource()!=null && transition.getSource().getId()!=null){
-                    System.out.println("Transitioning form "+ transition.getSource().getId()
+                    System.out.println("Transitioning from "+ transition.getSource().getId()
                             +" to "+transition.getTarget().getId());
                 }
             };
@@ -110,22 +110,10 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
     @Bean
     public Action<OrderStates, OrderEvents> validateOrderAction() {
         return context ->{
-
             System.out.println("Init action validateOrderAction...");
-
             Flux<Department> departmentFlux = (Flux<Department>)context.getMessageHeader("departmentList");
-
-            departmentFlux.doOnComplete(()->{
-                System.out.println("ESTADO ACTUAL: "+context.getStateMachine().getState());
-                System.out.println("Send event.... PAY");
-                context.getExtendedState().getVariables().put("isComplete", true);
-               context.getStateMachine().sendEvent(Mono.just(
-                                MessageBuilder.withPayload(OrderEvents.PAY).build()))
-                        .doOnComplete(()->System.out.println("Final Send Event PAY in validateOrderAction: "+context.getStateMachine().getState().getId()))
-                        .subscribe(result -> System.out.println("RESULT send Event PAY in validateOrderAction: "+result.getResultType()));
-            }).subscribe(dep->{
-                System.out.println("DEPARTMENT_ID: "+dep.getDepartmentId());
-                System.out.println("DEPARTMENT_NAME: "+dep.getDepartmentName());
+            departmentFlux.subscribe(dep->{
+                System.out.println("department in validateOrderAction: "+dep.getDepartmentName());
             });
         };
     }
@@ -134,11 +122,10 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
     public Action<OrderStates, OrderEvents> payOrderAction() {
         return context ->{
             System.out.println("Init action payOrderAction...");
-            System.out.println("Send SHIP event...");
-            /*context.getStateMachine().sendEvent(Mono.just(
-                            MessageBuilder.withPayload(OrderEvents.SHIP).build()))
-                    .doOnComplete(()->System.out.println("Final Send Event SHIP in payOrderAction: "+context.getStateMachine().getState().getId()))
-                    .subscribe(result -> System.out.println("RESULT send Event SHIP in payOrderAction: "+result.getResultType()));*/
+            Flux<Department> departmentFlux = (Flux<Department>)context.getMessageHeader("departmentList");
+            departmentFlux.subscribe(dep->{
+                System.out.println("department in payOrderAction: "+dep.getDepartmentName());
+            });
         };
 
     }
@@ -147,22 +134,20 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
     public Action<OrderStates, OrderEvents> shipOrderAction() {
         return context ->{
             System.out.println("Init action shipOrderAction...");
-            System.out.println("Send event.... COMPLETE");
-            /*context.getStateMachine().sendEvent(Mono.just(
-                            MessageBuilder.withPayload(OrderEvents.COMPLETE).build()))
-                    .doOnComplete(()->System.out.println("Final Send Event COMPLETE in shipOrderAction: "+context.getStateMachine().getState().getId()))
-                    .subscribe(result -> System.out.println("RESULT send Event COMPLETE in shipOrderAction: "+result.getResultType()));*/
+            Flux<Department> departmentFlux = (Flux<Department>)context.getMessageHeader("departmentList");
+            departmentFlux.subscribe(dep->{
+                System.out.println("department in shipOrderAction: "+dep.getDepartmentName());
+            });
         };
     }
 
-    public  Action<OrderStates, OrderEvents> completeOrder(){
+    public  Action<OrderStates, OrderEvents> completeOrderAction(){
         return context ->{
-            System.out.println("Init action completeOrder...");
-            System.out.println("Send event.... STOP_STATE_MACHINE");
-            /*context.getStateMachine().sendEvent(Mono.just(
-                            MessageBuilder.withPayload(OrderEvents.STOP_STATE_MACHINE).build()))
-                    .doOnComplete(()->System.out.println("Final Send Event STOP_STATE_MACHINE in completeOrder: "+context.getStateMachine().getState().getId()))
-                    .subscribe(result -> System.out.println("RESULT send Event STOP_STATE_MACHINE in completeOrder: "+result.getResultType()));*/
+            System.out.println("Init action completeOrderAction...");
+            Flux<Department> departmentFlux = (Flux<Department>)context.getMessageHeader("departmentList");
+            departmentFlux.subscribe(dep->{
+                System.out.println("department in completeOrderAction: "+dep.getDepartmentName());
+            });
 
         };
     }
