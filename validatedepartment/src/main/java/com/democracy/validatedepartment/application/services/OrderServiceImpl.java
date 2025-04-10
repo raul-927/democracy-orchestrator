@@ -28,9 +28,9 @@ public class OrderServiceImpl implements OrderService {
     public Order newOrder(Order order) {
         initOrderSaga();
         validateOrder(order);
-        payOrder();
-        shipOrder();
-        completeOrder();
+        //payOrder();
+        //shipOrder();
+        //completeOrder();
         return order;
     }
     @Override
