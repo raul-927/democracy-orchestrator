@@ -1,7 +1,8 @@
 package com.democracy.democracy_orchestrator.domain.ports.out;
 
 import com.democracy.democracy_orchestrator.domain.models.Investigation;
+import reactor.core.publisher.Flux;
 
 public interface InvestigationOut {
-    Investigation selectInvestigation(Investigation investigation);
+    Flux<Investigation> selectInvestigation(Investigation investigation);
 }

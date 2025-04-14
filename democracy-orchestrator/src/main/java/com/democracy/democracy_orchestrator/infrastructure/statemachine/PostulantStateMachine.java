@@ -2,19 +2,27 @@ package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
 
 
+import com.democracy.democracy_orchestrator.domain.models.Investigation;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.PostulationStates;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTrigger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
+import org.springframework.statemachine.guard.Guard;
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.transition.Transition;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -23,14 +31,19 @@ import java.util.List;
 @EnableStateMachineFactory(name ="postulantStateMachineFactory")
 public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<PostulationStates, PostulationEvents> {
 
+    @Autowired
+    private PostulantTrigger postulantTrigger;
+
     @Override
     public void configure(StateMachineStateConfigurer<PostulationStates, PostulationEvents> states)throws Exception{
         states
                 .withStates()
                 .initial(PostulationStates.NEW)
+                .choice(PostulationStates.DOCUMENTS_VALIDATED)
                 .states(EnumSet.allOf(PostulationStates.class))
                 .end(PostulationStates.COMPLETED)
-                .end(PostulationStates.CANCELLED);
+                .end(PostulationStates.CANCELLED)
+                .end(PostulationStates.NOT_VALID);
     }
 
     @Override
@@ -38,57 +51,62 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         transitions
                 .withExternal()
                     .source(PostulationStates.NEW)
-                    .target(PostulationStates.DOCUMENTS_VALIDATED)
-                    .event(PostulationEvents.VALIDATE_DOCUMENTS)
-                    .action(validateDocumentsAction())
+                        .target(PostulationStates.DOCUMENTS_VALIDATED)
+                            .event(PostulationEvents.VALIDATE_DOCUMENTS)
+                                .action(validateDocumentsAction())
                 .and()
+                .withChoice()
+                    .source(PostulationStates.DOCUMENTS_VALIDATED)
+                        .first(PostulationStates.CRIMINAL_RECORDS_VALIDATED, guardValidateDocuments())
+                            .last(PostulationStates.NOT_VALID)
+                /*.and()
                 .withExternal()
                     .source(PostulationStates.DOCUMENTS_VALIDATED)
                     .target(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
                     .event(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
-                    .action(criminalRecordsAction())
+                    .action(criminalRecordsAction())*/
                 .and()
                 .withExternal()
                     .source(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
-                    .target(PostulationStates.PROFESSION_VALIDATED)
-                    .event(PostulationEvents.VALIDATE_PROFESSION)
-                    .action(validateProfessionAction())
+                        .target(PostulationStates.PROFESSION_VALIDATED)
+                            .event(PostulationEvents.VALIDATE_PROFESSION)
+                                .action(validateProfessionAction())
                 .and()
                 .withExternal()
                     .source(PostulationStates.PROFESSION_VALIDATED)
-                    .target(PostulationStates.DOCUMENTS_VALIDATED)
-                    .event(PostulationEvents.VALIDATE_DOCUMENTS)
-                    .action(validateDocumentsAction())
+                        .target(PostulationStates.DOCUMENTS_VALIDATED)
+                            .event(PostulationEvents.VALIDATE_DOCUMENTS)
+                                .action(validateDocumentsAction())
                 .and()
                 .withExternal()
                     .source(PostulationStates.DOCUMENTS_VALIDATED)
-                    .target(PostulationStates.COMPLETED)
-                    .event(PostulationEvents.COMPLETE)
-                    .action(completedAction())
+                        .target(PostulationStates.COMPLETED)
+                            .event(PostulationEvents.COMPLETE)
+                                .action(completedAction())
                 .and()
                 .withExternal()
                     .source(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
-                    .target(PostulationStates.CANCELLED)
-                    .event(PostulationEvents.CANCEL)
+                        .target(PostulationStates.CANCELLED)
+                            .event(PostulationEvents.CANCEL)
                 .and()
                 .withExternal()
                     .source(PostulationStates.PROFESSION_VALIDATED)
-                    .target(PostulationStates.CANCELLED)
-                    .event(PostulationEvents.CANCEL)
+                        .target(PostulationStates.CANCELLED)
+                            .event(PostulationEvents.CANCEL)
                 .and()
                 .withExternal()
                     .source(PostulationStates.DOCUMENTS_VALIDATED)
-                    .target(PostulationStates.CANCELLED)
-                    .event(PostulationEvents.CANCEL);
+                        .target(PostulationStates.CANCELLED)
+                            .event(PostulationEvents.CANCEL);
     }
 
     @Override
     public void configure(StateMachineConfigurationConfigurer<PostulationStates, PostulationEvents> config) throws Exception {
-        config.withConfiguration().listener(postulantListenner());
+        config.withConfiguration().listener(postulantListener());
     }
 
     @Bean
-    public StateMachineListener<PostulationStates, PostulationEvents> postulantListenner() {
+    public StateMachineListener<PostulationStates, PostulationEvents> postulantListener() {
         return new StateMachineListenerAdapter<PostulationStates, PostulationEvents>(){
             @Override
             public void transition(Transition<PostulationStates, PostulationEvents> transition){
@@ -102,22 +120,24 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     }
 
     @Bean
-    public Action<PostulationStates, PostulationEvents> validateProfessionAction() {
-        return context ->{
-            System.out.println("Proffesion validate Action");
-        };
-    }
-
-    @Bean
-    public Action<PostulationStates, PostulationEvents> criminalRecordsAction() {
-        return context ->{
-            System.out.println("Criminal record validate Action");
-        };
-    }
-
-    @Bean
     public Action<PostulationStates, PostulationEvents> validateDocumentsAction() {
         return context ->{
+            System.out.println("Init action validateDocumentsAction...");
+            Flux<Investigation> investigationResult = (Flux<Investigation>)context.getMessageHeader("investigationResult");
+            investigationResult.subscribe(result->{
+                var isValid = false;
+                if(result!=null){
+                    isValid = true;
+                }
+                System.out.println("IS_VALID: "+isValid);
+                postulantTrigger.validateProfession(Mono.just(
+                        MessageBuilder.withPayload(PostulationEvents.VALIDATE_PROFESSION)
+                                .setHeader("isValid", isValid)
+                                .build()));
+
+
+
+            });
            /*Order order = (Order) context.getMessageHeader("order");
             List<Department> departments = (List<Department>) context.getMessageHeader("departmentList");
             departments.forEach(department -> {
@@ -130,9 +150,38 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     }
 
     @Bean
+    public Action<PostulationStates, PostulationEvents> validateProfessionAction() {
+        return context ->{
+
+
+            System.out.println("Proffesion validate Action");
+        };
+    }
+
+    @Bean
+    public Action<PostulationStates, PostulationEvents> criminalRecordsAction() {
+        return context ->{
+            System.out.println("Criminal record validate Action");
+        };
+    }
+
+
+
+    @Bean
     public Action<PostulationStates, PostulationEvents> completedAction() {
         return context ->{
             System.out.println("Completed postulant Action");
+        };
+    }
+
+    @Bean
+    public Guard<PostulationStates, PostulationEvents> guardValidateDocuments() {
+        return new Guard<PostulationStates, PostulationEvents>() {
+
+            @Override
+            public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
+                return false;
+            }
         };
     }
 }

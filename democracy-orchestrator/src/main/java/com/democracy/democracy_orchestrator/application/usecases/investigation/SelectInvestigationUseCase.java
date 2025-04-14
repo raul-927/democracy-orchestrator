@@ -4,6 +4,7 @@ import com.democracy.democracy_orchestrator.domain.models.Investigation;
 import com.democracy.democracy_orchestrator.domain.ports.in.investigation.SelectInvestigationIn;
 import com.democracy.democracy_orchestrator.domain.ports.out.InvestigationOut;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 
 @Component
@@ -16,7 +17,7 @@ public class SelectInvestigationUseCase implements SelectInvestigationIn {
     }
 
     @Override
-    public Investigation selectInvestigation(Investigation investigation) {
+    public Flux<Investigation> selectInvestigation(Investigation investigation) {
         return this.investigationOut.selectInvestigation(investigation);
     }
 }
