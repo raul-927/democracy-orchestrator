@@ -3,21 +3,25 @@ package com.democracy.validatedepartment.application.statemachine;
 
 
 
+import com.democracy.validatedepartment.application.services.OrderService;
 import com.democracy.validatedepartment.domain.models.Department;
 import com.democracy.validatedepartment.domain.models.Order;
 import com.democracy.validatedepartment.application.statemachine.events.OrderEvents;
 import com.democracy.validatedepartment.application.statemachine.states.OrderStates;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
+import org.springframework.statemachine.action.ReactiveAction;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.guard.Guard;
+import org.springframework.statemachine.guard.ReactiveGuard;
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.transition.Transition;
@@ -32,12 +36,19 @@ import java.util.List;
 @EnableStateMachineFactory(name = "orderStateMachineFactory")
 public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderStates, OrderEvents> {
 
+    @Autowired
+    private OrderService orderService;
+
     private boolean isValid = false;
     @Override
     public void configure(StateMachineStateConfigurer<OrderStates, OrderEvents> states)throws Exception{
         states
                 .withStates()
                 .initial(OrderStates.NEW)
+                .state(OrderStates.PAID, context -> context.getStateMachine().getState()
+                        .sendEvent(
+                                MessageBuilder.withPayload(OrderEvents.VALIDATE)
+                                        .build()))
                 .states(EnumSet.allOf(OrderStates.class))
                 .end(OrderStates.STATE_MACHINE_STOPED)
                 .end(OrderStates.CANCELLED);
@@ -52,7 +63,7 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
                     .target(OrderStates.VALIDATED)
                     .event(OrderEvents.VALIDATE)
                     .action(validateOrderAction())
-                    //.guard(guard1())
+                    //.guard(context -> guard1R().apply(context).block())
                 .and()
                 .withExternal()
                     .source(OrderStates.VALIDATED)
@@ -112,9 +123,23 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
         return context ->{
             System.out.println("Init action validateOrderAction...");
             Flux<Department> departmentFlux = (Flux<Department>)context.getMessageHeader("departmentList");
-            departmentFlux.subscribe(dep->{
+            departmentFlux
+                    .doOnComplete(()->{
+                        orderService.payOrder(Mono.just(
+                                MessageBuilder.withPayload(OrderEvents.PAY)
+                                        .setHeader("departmentList", departmentFlux)
+                                        .build()));
+                    })
+                    .subscribe(dep->{
                 System.out.println("department in validateOrderAction: "+dep.getDepartmentName());
             });
+        };
+    }
+
+    public ReactiveAction<OrderStates, OrderEvents> validateOrderActionReactive(){
+        return context ->{
+            context.getStateMachine().getId();
+            return null;
         };
     }
 
@@ -123,7 +148,14 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
         return context ->{
             System.out.println("Init action payOrderAction...");
             Flux<Department> departmentFlux = (Flux<Department>)context.getMessageHeader("departmentList");
-            departmentFlux.subscribe(dep->{
+            departmentFlux
+                    .doOnComplete(()->{
+                        orderService.shipOrder(Mono.just(
+                                MessageBuilder.withPayload(OrderEvents.SHIP)
+                                        .setHeader("departmentList", departmentFlux)
+                                        .build()));
+                    })
+                    .subscribe(dep->{
                 System.out.println("department in payOrderAction: "+dep.getDepartmentName());
             });
         };
@@ -135,7 +167,14 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
         return context ->{
             System.out.println("Init action shipOrderAction...");
             Flux<Department> departmentFlux = (Flux<Department>)context.getMessageHeader("departmentList");
-            departmentFlux.subscribe(dep->{
+            departmentFlux
+                    .doOnComplete(()->{
+                        orderService.completeOrder(Mono.just(
+                                MessageBuilder.withPayload(OrderEvents.COMPLETE)
+                                        .setHeader("departmentList", departmentFlux)
+                                        .build()));
+                    })
+                    .subscribe(dep->{
                 System.out.println("department in shipOrderAction: "+dep.getDepartmentName());
             });
         };
@@ -145,7 +184,9 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
         return context ->{
             System.out.println("Init action completeOrderAction...");
             Flux<Department> departmentFlux = (Flux<Department>)context.getMessageHeader("departmentList");
-            departmentFlux.subscribe(dep->{
+            departmentFlux
+                    .doOnComplete(orderService::stopOrderSaga)
+                    .subscribe(dep->{
                 System.out.println("department in completeOrderAction: "+dep.getDepartmentName());
             });
 
@@ -172,6 +213,19 @@ public class OrderStateMachine extends EnumStateMachineConfigurerAdapter<OrderSt
                     System.out.println("Init guard1 validateOrderAction...");
                     Order order = (Order) context.getMessageHeader("order");
                 return context.getStateMachine().getExtendedState().get("isComplete", Boolean.class);
+            }
+        };
+    }
+
+    public ReactiveGuard<OrderStates, OrderEvents>guard1R(){
+        return new ReactiveGuard<OrderStates, OrderEvents>() {
+            @Override
+            public Mono<Boolean> apply(StateContext<OrderStates, OrderEvents> orderStatesOrderEventsStateContext) {
+                Flux<Department> departmentFlux = (Flux<Department>)orderStatesOrderEventsStateContext.getMessageHeader("departmentList");
+
+                return departmentFlux.doOnComplete(
+                        ()->System.out.println("Listo")
+                ).hasElements();
             }
         };
     }
