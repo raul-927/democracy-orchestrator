@@ -4,6 +4,7 @@ package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
 import com.democracy.democracy_orchestrator.application.services.PersonService;
 import com.democracy.democracy_orchestrator.application.services.TokenService;
+import com.democracy.democracy_orchestrator.domain.models.Investigation;
 import com.democracy.democracy_orchestrator.domain.models.Person;
 import com.democracy.democracy_orchestrator.domain.models.Profession;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
@@ -51,6 +52,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     private TokenService tokenService;
 
     private Profession profession;
+
+    private Investigation investigation;
 
     @Override
     public void configure(StateMachineStateConfigurer<PostulationStates, PostulationEvents> states)throws Exception{
@@ -159,6 +162,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                                         .build()));
                     })
                     .subscribe(result->{
+                        investigation.setPerson(result);
                         profession = result.getProfession();
                     });
         };
