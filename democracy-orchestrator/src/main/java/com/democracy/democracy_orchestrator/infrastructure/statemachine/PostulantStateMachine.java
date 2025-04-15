@@ -4,7 +4,6 @@ package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
 import com.democracy.democracy_orchestrator.application.services.PersonService;
 import com.democracy.democracy_orchestrator.application.services.TokenService;
-import com.democracy.democracy_orchestrator.domain.models.Investigation;
 import com.democracy.democracy_orchestrator.domain.models.Person;
 import com.democracy.democracy_orchestrator.domain.models.Profession;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
@@ -33,6 +32,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.EnumSet;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Configuration
 @EnableStateMachineFactory(name ="postulantStateMachineFactory")
@@ -49,6 +49,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
 
     @Autowired
     private TokenService tokenService;
+
+    private Profession profession;
 
     @Override
     public void configure(StateMachineStateConfigurer<PostulationStates, PostulationEvents> states)throws Exception{
@@ -150,11 +152,15 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     .bodyToFlux(Person.class);
             personFlux
                     .doOnComplete(()->{
+                        System.out.println("PROFESSION1: "+profession);
                         postulantTrigger.validateProfession(Mono.just(
                                 MessageBuilder.withPayload(PostulationEvents.VALIDATE_PROFESSION)
+                                        .setHeader("profession",profession)
                                         .build()));
                     })
-                    .subscribe(System.out::println);
+                    .subscribe(result->{
+                        profession = result.getProfession();
+                    });
         };
     }
 
@@ -163,6 +169,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return context ->{
             System.out.println("Init action validateProfessionAction...");
             System.out.println(context.getStateMachine().getState().getId());
+            Profession profession = (Profession)context.getMessageHeader("profession");
+            System.out.println("PROFESSION2: "+profession);
             if(context.getStateMachine().getState().getId().equals(PostulationStates.PROFESSION_VALIDATED)){
                 postulantTrigger.validateDocument(Mono.just(
                         MessageBuilder.withPayload(PostulationEvents.VALIDATE_DOCUMENTS)

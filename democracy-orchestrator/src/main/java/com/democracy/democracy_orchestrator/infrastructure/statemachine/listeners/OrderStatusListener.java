@@ -1,11 +1,17 @@
 package com.democracy.democracy_orchestrator.infrastructure.statemachine.listeners;
 
 
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTrigger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.annotation.OnStateChanged;
 import org.springframework.statemachine.annotation.OnTransition;
 import org.springframework.statemachine.annotation.WithStateMachine;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 /**
  * @description: state listener
@@ -14,9 +20,15 @@ import org.springframework.transaction.annotation.Transactional;
 //@WithStateMachine
 //@Transactional
 public class OrderStatusListener {
-    //@OnTransition(source = "WAIT_PAYMENT", target = "WAIT_DELIVER")
+    @Autowired
+    private PostulantTrigger postulantTrigger;
+    @OnStateChanged(source = "PERSON_VALIDATED", target = "PROFESSION_VALIDATED")
     public boolean payTransition(Message message) {
-        System.out.println("pay，feedback by statemachine：" + message.getHeaders().toString());
+        System.out.println("State Changed...：" + message.getHeaders().toString());
+        postulantTrigger.validateDocument(Mono.just(
+                MessageBuilder.withPayload(PostulationEvents.VALIDATE_DOCUMENTS)
+                        .build()
+        ));
         return true;
     }
 
