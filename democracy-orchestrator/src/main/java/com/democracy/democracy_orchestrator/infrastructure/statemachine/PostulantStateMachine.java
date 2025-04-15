@@ -2,13 +2,18 @@ package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
 
 
+import com.democracy.democracy_orchestrator.application.services.PersonService;
+import com.democracy.democracy_orchestrator.application.services.TokenService;
 import com.democracy.democracy_orchestrator.domain.models.Investigation;
+import com.democracy.democracy_orchestrator.domain.models.Person;
+import com.democracy.democracy_orchestrator.domain.models.Profession;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.PostulationStates;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTrigger;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTriggerImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.ReactiveHttpOutputMessage;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
@@ -21,25 +26,36 @@ import org.springframework.statemachine.guard.Guard;
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.transition.Transition;
+import org.springframework.web.reactive.function.BodyInserter;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.EnumSet;
-import java.util.List;
 
 @Configuration
 @EnableStateMachineFactory(name ="postulantStateMachineFactory")
 public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<PostulationStates, PostulationEvents> {
 
     @Autowired
-    private PostulantTrigger postulantTrigger;
+    private PostulantTriggerImpl postulantTrigger;
+
+    @Autowired
+    private PersonService personService;
+
+    @Autowired
+    private WebClient webClient;
+
+    @Autowired
+    private TokenService tokenService;
 
     @Override
     public void configure(StateMachineStateConfigurer<PostulationStates, PostulationEvents> states)throws Exception{
         states
                 .withStates()
                 .initial(PostulationStates.NEW)
-                .choice(PostulationStates.DOCUMENTS_VALIDATED)
+                //.state(PostulationStates.DOCUMENTS_VALIDATED)
                 .states(EnumSet.allOf(PostulationStates.class))
                 .end(PostulationStates.COMPLETED)
                 .end(PostulationStates.CANCELLED)
@@ -51,29 +67,29 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         transitions
                 .withExternal()
                     .source(PostulationStates.NEW)
-                        .target(PostulationStates.DOCUMENTS_VALIDATED)
-                            .event(PostulationEvents.VALIDATE_DOCUMENTS)
-                                .action(validateDocumentsAction())
-                .and()
+                        .target(PostulationStates.PERSON_VALIDATED)
+                            .event(PostulationEvents.VALIDATE_PERSON)
+                                .action(validatePersonAction())
+               /* .and()
                 .withChoice()
                     .source(PostulationStates.DOCUMENTS_VALIDATED)
                         .first(PostulationStates.CRIMINAL_RECORDS_VALIDATED, guardValidateDocuments())
-                            .last(PostulationStates.NOT_VALID)
-                /*.and()
-                .withExternal()
-                    .source(PostulationStates.DOCUMENTS_VALIDATED)
-                    .target(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
-                    .event(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
-                    .action(criminalRecordsAction())*/
+                            .last(PostulationStates.NOT_VALID)*/
                 .and()
                 .withExternal()
-                    .source(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
-                        .target(PostulationStates.PROFESSION_VALIDATED)
-                            .event(PostulationEvents.VALIDATE_PROFESSION)
-                                .action(validateProfessionAction())
+                    .source(PostulationStates.PERSON_VALIDATED)
+                    .target(PostulationStates.PROFESSION_VALIDATED)
+                    .event(PostulationEvents.VALIDATE_PROFESSION)
+                    .action(validateProfessionAction())
                 .and()
                 .withExternal()
                     .source(PostulationStates.PROFESSION_VALIDATED)
+                        .target(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
+                            .event(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
+                                .action(criminalRecordsAction())
+                .and()
+                .withExternal()
+                    .source(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
                         .target(PostulationStates.DOCUMENTS_VALIDATED)
                             .event(PostulationEvents.VALIDATE_DOCUMENTS)
                                 .action(validateDocumentsAction())
@@ -118,50 +134,70 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             };
         };
     }
-
+//-----------------------------------------ACTIONS----------------------------------------------------------------------
     @Bean
-    public Action<PostulationStates, PostulationEvents> validateDocumentsAction() {
+    public Action<PostulationStates, PostulationEvents> validatePersonAction(){
         return context ->{
-            System.out.println("Init action validateDocumentsAction...");
-            Flux<Investigation> investigationResult = (Flux<Investigation>)context.getMessageHeader("investigationResult");
-            investigationResult.subscribe(result->{
-                var isValid = false;
-                if(result!=null){
-                    isValid = true;
-                }
-                System.out.println("IS_VALID: "+isValid);
-                postulantTrigger.validateProfession(Mono.just(
-                        MessageBuilder.withPayload(PostulationEvents.VALIDATE_PROFESSION)
-                                .setHeader("isValid", isValid)
-                                .build()));
 
-
-
-            });
-           /*Order order = (Order) context.getMessageHeader("order");
-            List<Department> departments = (List<Department>) context.getMessageHeader("departmentList");
-            departments.forEach(department -> {
-                System.out.println("DEPARTMENT_id IN validateOrderAction: "+department.getDepartmentId());
-                System.out.println("DEPARTMENT_NAME IN validateOrderAction: "+department.getDepartmentName());
-            });*/
-
-            System.out.println("Document validate Action: ");
+            System.out.println("Init action validatePersonAction...");
+            Person person = (Person)context.getMessageHeader("person");
+            BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
+            Flux<Person> personFlux = webClient.post()
+                    .uri("http://localhost:8082/humanresources/person/select")
+                    .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
+                    .body(selectPerson)
+                    .retrieve()
+                    .bodyToFlux(Person.class);
+            personFlux
+                    .doOnComplete(()->{
+                        postulantTrigger.validateProfession(Mono.just(
+                                MessageBuilder.withPayload(PostulationEvents.VALIDATE_PROFESSION)
+                                        .build()));
+                    })
+                    .subscribe(System.out::println);
         };
     }
 
     @Bean
     public Action<PostulationStates, PostulationEvents> validateProfessionAction() {
         return context ->{
+            System.out.println("Init action validateProfessionAction...");
+            System.out.println(context.getStateMachine().getState().getId());
+            if(context.getStateMachine().getState().getId().equals(PostulationStates.PROFESSION_VALIDATED)){
+                postulantTrigger.validateDocument(Mono.just(
+                        MessageBuilder.withPayload(PostulationEvents.VALIDATE_DOCUMENTS)
+                                .build()
+                ));
+                System.out.println("Profession validate Action");
+            }
 
 
-            System.out.println("Proffesion validate Action");
         };
     }
 
     @Bean
+    public Action<PostulationStates, PostulationEvents> validateDocumentsAction() {
+        return context ->{
+            System.out.println("Init action validateDocumentsAction...");
+            var isValid = false;
+            postulantTrigger.validateCriminalRecords(Mono.just(
+                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
+                            .build()
+            ));
+            System.out.println("IS_VALID: "+isValid);
+            System.out.println("Document validate Action: ");
+        };
+    }
+
+
+    @Bean
     public Action<PostulationStates, PostulationEvents> criminalRecordsAction() {
         return context ->{
-            System.out.println("Criminal record validate Action");
+            System.out.println("Init action criminalRecordsAction...");
+            postulantTrigger.validateCompletedAction(Mono.just(
+                    MessageBuilder.withPayload(PostulationEvents.COMPLETE)
+                            .build()
+            ));
         };
     }
 
@@ -170,7 +206,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> completedAction() {
         return context ->{
-            System.out.println("Completed postulant Action");
+            System.out.println("Init action completedAction...");
         };
     }
 

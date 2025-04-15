@@ -15,7 +15,7 @@ import lombok.experimental.Accessors;
 public class Person {
 
     private int 	   			id;
-    private int 	   			personId;
+    private String 	   			personId;
     private int 	   			cedula;
     private int					civicCredential;
     private String 	   			firstName;

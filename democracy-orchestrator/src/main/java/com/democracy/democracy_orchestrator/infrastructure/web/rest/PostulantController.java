@@ -3,14 +3,14 @@ package com.democracy.democracy_orchestrator.infrastructure.web.rest;
 import com.democracy.democracy_orchestrator.application.services.DepartmentService;
 import com.democracy.democracy_orchestrator.domain.models.Department;
 import com.democracy.democracy_orchestrator.domain.models.Investigation;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTrigger;
+import com.democracy.democracy_orchestrator.domain.models.Person;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTriggerImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import reactor.core.Disposable;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -24,7 +24,7 @@ public class PostulantController {
     private DepartmentService departmentService;
 
     @Autowired
-    private PostulantTrigger postulantTrigger;
+    private PostulantTriggerImpl postulantTrigger;
 
 
    // @GetMapping("/department/select-all")
@@ -34,10 +34,14 @@ public class PostulantController {
         return new ResponseEntity<>(departments, null, HttpStatus.OK);
     }
 
-    @GetMapping("/investigation/select")
-    public Flux<Investigation> getInvestigation(Investigation investigation){
-
-        return postulantTrigger.validateDocuments(investigation);
+    @PostMapping("/investigation/select")
+    public Mono<Person> getInvestigation(@RequestBody Person person){
+        postulantTrigger.initPostulationSaga();
+        postulantTrigger.validatePerson(Mono.just(
+                MessageBuilder.withPayload(PostulationEvents.VALIDATE_PERSON)
+                        .setHeader("person", person)
+                        .build()));
+        return Mono.just(person);
     }
 
 

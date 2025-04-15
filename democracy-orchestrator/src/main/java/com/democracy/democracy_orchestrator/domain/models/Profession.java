@@ -15,6 +15,6 @@ import lombok.experimental.Accessors;
 public class Profession {
 
     private int 	id;
-    private int 	professionId;
+    private String 	professionId;
     private String 	professionName;
 }
