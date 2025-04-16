@@ -78,7 +78,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                /* .and()
                 .withChoice()
                     .source(PostulationStates.PERSON_VALIDATED)
-                        .first(PostulationStates.PROFESSION_VALIDATED, guardValidateDocuments())
+                        .first(PostulationStates.PROFESSION_VALIDATED, guardValidatePersons())
                             .last(PostulationStates.NOT_VALID)*/
                 .and()
                 .withExternal()
