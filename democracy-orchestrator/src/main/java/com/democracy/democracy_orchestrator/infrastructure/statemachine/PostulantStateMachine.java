@@ -143,7 +143,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> validatePersonAction(){
         return context ->{
-
             System.out.println("Init action validatePersonAction...");
             Person person = (Person)context.getMessageHeader("person");
             BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
@@ -183,8 +182,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 ));
                 System.out.println("Profession validate Action");
             }
-
-
         };
     }
 
@@ -202,7 +199,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         };
     }
 
-
     @Bean
     public Action<PostulationStates, PostulationEvents> criminalRecordsAction() {
         return context ->{
@@ -213,8 +209,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             ));
         };
     }
-
-
 
     @Bean
     public Action<PostulationStates, PostulationEvents> completedAction() {
