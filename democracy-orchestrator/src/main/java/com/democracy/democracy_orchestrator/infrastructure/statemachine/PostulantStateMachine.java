@@ -77,8 +77,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                                 .action(validatePersonAction())
                /* .and()
                 .withChoice()
-                    .source(PostulationStates.DOCUMENTS_VALIDATED)
-                        .first(PostulationStates.CRIMINAL_RECORDS_VALIDATED, guardValidateDocuments())
+                    .source(PostulationStates.PERSON_VALIDATED)
+                        .first(PostulationStates.PROFESSION_VALIDATED, guardValidateDocuments())
                             .last(PostulationStates.NOT_VALID)*/
                 .and()
                 .withExternal()
@@ -175,7 +175,11 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             System.out.println(context.getStateMachine().getState().getId());
             Profession profession = (Profession)context.getMessageHeader("profession");
             System.out.println("PROFESSION2: "+profession);
-            if(context.getStateMachine().getState().getId().equals(PostulationStates.PROFESSION_VALIDATED)){
+            if(context
+                    .getStateMachine()
+                        .getState()
+                            .getId()
+                                .equals(PostulationStates.PROFESSION_VALIDATED)){
                 postulantTrigger.validateDocument(Mono.just(
                         MessageBuilder.withPayload(PostulationEvents.VALIDATE_DOCUMENTS)
                                 .build()
@@ -214,6 +218,18 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public Action<PostulationStates, PostulationEvents> completedAction() {
         return context ->{
             System.out.println("Init action completedAction...");
+        };
+    }
+    //------------------------------------GUARDS------------------------------------------------------------------------
+
+    @Bean
+    public Guard<PostulationStates, PostulationEvents> guardValidatePersons() {
+        return new Guard<PostulationStates, PostulationEvents>() {
+
+            @Override
+            public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
+                return false;
+            }
         };
     }
 

@@ -20,9 +20,9 @@ import reactor.core.publisher.Mono;
 //@WithStateMachine
 //@Transactional
 public class OrderStatusListener {
-    @Autowired
+    //@Autowired
     private PostulantTrigger postulantTrigger;
-    @OnStateChanged(source = "PERSON_VALIDATED", target = "PROFESSION_VALIDATED")
+    //@OnStateChanged(source = "PERSON_VALIDATED", target = "PROFESSION_VALIDATED")
     public boolean payTransition(Message message) {
         System.out.println("State Changed...：" + message.getHeaders().toString());
         postulantTrigger.validateDocument(Mono.just(
