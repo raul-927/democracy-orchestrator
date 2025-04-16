@@ -162,6 +162,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                                         .build()));
                     })
                     .subscribe(result->{
+                        investigation = new Investigation();
                         investigation.setPerson(result);
                         profession = result.getProfession();
                     });
