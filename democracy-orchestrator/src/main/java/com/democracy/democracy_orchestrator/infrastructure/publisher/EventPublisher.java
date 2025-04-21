@@ -9,7 +9,7 @@ import reactor.core.publisher.Sinks;
 
 import java.time.Duration;
 
-@Component
+//@Component
 public class EventPublisher {
 
     private final Sinks.Many<String> eventSink;
@@ -20,7 +20,7 @@ public class EventPublisher {
         this.eventSink = Sinks.many().multicast().onBackpressureBuffer();
     }
 
-    @PostConstruct
+    //@PostConstruct
     public void init() {
         intervalSubscription = Flux.interval(Duration.ofSeconds(1))
                 .map(sequence -> "Event " + sequence)

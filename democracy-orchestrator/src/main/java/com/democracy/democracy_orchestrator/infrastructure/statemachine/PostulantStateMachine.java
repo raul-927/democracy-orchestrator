@@ -152,6 +152,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     .body(selectPerson)
                     .retrieve()
                     .bodyToFlux(Person.class);
+
             personFlux
                     .doOnComplete(()->{
                         System.out.println("PROFESSION1: "+profession);
@@ -171,21 +172,39 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> validateProfessionAction() {
         return context ->{
+            BodyInserter<Profession, ReactiveHttpOutputMessage> selectProfession = BodyInserters.fromValue(profession);
+            Flux<Profession> professionFlux = webClient.post()
+                    .uri("http://localhost:8082/humanresources/profession/select")
+                    .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
+                    .body(selectProfession)
+                    .retrieve()
+                    .bodyToFlux(Profession.class);
             System.out.println("Init action validateProfessionAction...");
             System.out.println(context.getStateMachine().getState().getId());
             Profession profession = (Profession)context.getMessageHeader("profession");
             System.out.println("PROFESSION2: "+profession);
-            if(context
-                    .getStateMachine()
-                        .getState()
-                            .getId()
-                                .equals(PostulationStates.PROFESSION_VALIDATED)){
-                postulantTrigger.validateDocument(Mono.just(
-                        MessageBuilder.withPayload(PostulationEvents.VALIDATE_DOCUMENTS)
-                                .build()
-                ));
-                System.out.println("Profession validate Action");
-            }
+           professionFlux.
+        doOnComplete(()->{
+            postulantTrigger.validateCriminalRecords(Mono.just(
+                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
+                            .build()
+            ));
+            System.out.println("Profession validate Action");
+        }).subscribe(result->{
+               if(result.getProfessionId().equals(profession.getProfessionId())){
+                   System.out.println("SON IGUALES");
+               }
+           });
+        };
+    }
+    @Bean
+    public Action<PostulationStates, PostulationEvents> criminalRecordsAction() {
+        return context ->{
+            System.out.println("Init action criminalRecordsAction...");
+            /*postulantTrigger.validateCompletedAction(Mono.just(
+                    MessageBuilder.withPayload(PostulationEvents.COMPLETE)
+                            .build()
+            ));*/
         };
     }
 
@@ -200,17 +219,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             ));
             System.out.println("IS_VALID: "+isValid);
             System.out.println("Document validate Action: ");
-        };
-    }
-
-    @Bean
-    public Action<PostulationStates, PostulationEvents> criminalRecordsAction() {
-        return context ->{
-            System.out.println("Init action criminalRecordsAction...");
-            postulantTrigger.validateCompletedAction(Mono.just(
-                    MessageBuilder.withPayload(PostulationEvents.COMPLETE)
-                            .build()
-            ));
         };
     }
 

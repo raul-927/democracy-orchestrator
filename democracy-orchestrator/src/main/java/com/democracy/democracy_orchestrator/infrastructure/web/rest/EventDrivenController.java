@@ -7,12 +7,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
-@RestController
+//@RestController
 public class EventDrivenController {
-    @Autowired
+   // @Autowired
     private EventPublisher eventPublisher;
 
-    @GetMapping("/events")
+    //@GetMapping("/events")
     public Flux<String> getEventStream() {
         return eventPublisher.getEventStream();
     }
