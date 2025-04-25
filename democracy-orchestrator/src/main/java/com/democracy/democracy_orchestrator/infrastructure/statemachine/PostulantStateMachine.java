@@ -4,6 +4,7 @@ package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
 import com.democracy.democracy_orchestrator.application.services.PersonService;
 import com.democracy.democracy_orchestrator.application.services.TokenService;
+import com.democracy.democracy_orchestrator.domain.models.CriminalRecord;
 import com.democracy.democracy_orchestrator.domain.models.Investigation;
 import com.democracy.democracy_orchestrator.domain.models.Person;
 import com.democracy.democracy_orchestrator.domain.models.Profession;
@@ -184,11 +185,13 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             Profession profession = (Profession)context.getMessageHeader("profession");
             System.out.println("PROFESSION2: "+profession);
            professionFlux.
-        doOnComplete(()->{
-            postulantTrigger.validateCriminalRecords(Mono.just(
-                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
-                            .build()
-            ));
+            doOnComplete(()->{
+                postulantTrigger.validateCriminalRecords(Mono.just(
+                        MessageBuilder
+                                .withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
+                                .setHeader("person",investigation.getPerson())
+                                .build()
+                ));
             System.out.println("Profession validate Action");
         }).subscribe(result->{
                if(result.getProfessionId().equals(profession.getProfessionId())){
@@ -197,14 +200,19 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
            });
         };
     }
+
     @Bean
     public Action<PostulationStates, PostulationEvents> criminalRecordsAction() {
         return context ->{
             System.out.println("Init action criminalRecordsAction...");
-            /*postulantTrigger.validateCompletedAction(Mono.just(
-                    MessageBuilder.withPayload(PostulationEvents.COMPLETE)
-                            .build()
-            ));*/
+            Person person = (Person)context.getMessageHeader("person");
+            BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
+            Flux<CriminalRecord> criminalRecordFlux = webClient.post()
+                    .uri("http://localhost:8082/humanresources/criminalrecord/select")
+                    .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
+                    .body(selectPerson)
+                    .retrieve()
+                    .bodyToFlux(CriminalRecord.class);
         };
     }
 
