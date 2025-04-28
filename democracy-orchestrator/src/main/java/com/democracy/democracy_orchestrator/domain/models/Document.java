@@ -17,7 +17,7 @@ import java.sql.Blob;
 public class Document {
 
     private int 		id;
-    private int 		documentId;
+    private String 		documentId;
     private String 		documentName;
     private boolean 	verified;
     private boolean		approved;

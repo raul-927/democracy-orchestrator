@@ -33,7 +33,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Configuration
@@ -145,7 +147,9 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public Action<PostulationStates, PostulationEvents> validatePersonAction(){
         return context ->{
             System.out.println("Init action validatePersonAction...");
-            Person person = (Person)context.getMessageHeader("person");
+            Integer cedula = (Integer)context.getMessageHeader("cedula");
+            Person person = new Person();
+            person.setCedula(cedula);
             BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
             Flux<Person> personFlux = webClient.post()
                     .uri("http://localhost:8082/humanresources/person/select")
@@ -184,8 +188,10 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             System.out.println(context.getStateMachine().getState().getId());
             Profession profession = (Profession)context.getMessageHeader("profession");
             System.out.println("PROFESSION2: "+profession);
+
            professionFlux.
             doOnComplete(()->{
+                System.out.println("INVESTIGATION_PERSON: "+investigation.getPerson().getCedula());
                 postulantTrigger.validateCriminalRecords(Mono.just(
                         MessageBuilder
                                 .withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
@@ -213,6 +219,14 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     .body(selectPerson)
                     .retrieve()
                     .bodyToFlux(CriminalRecord.class);
+
+            criminalRecordFlux.doOnComplete(()->{
+
+            })
+                    .subscribe(result ->{
+                        List<CriminalRecord> criminalRecordList = new ArrayList<>();
+                        System.out.println("CRIMINAL_RECORD: "+result.getCriminalRecordDescription());
+                    });
         };
     }
 

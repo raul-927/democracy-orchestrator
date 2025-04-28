@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode
 public class Institute {
 
-    private int 		   instituteId;
+    private String 		   instituteId;
     private String 		   instituteName;
     private Address 	   address;
 

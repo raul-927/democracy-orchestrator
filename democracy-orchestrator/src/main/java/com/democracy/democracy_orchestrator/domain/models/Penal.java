@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode
 public class Penal {
     private int id;
-    private int penalId;
+    private String penalId;
     private String penalName;
 
 }

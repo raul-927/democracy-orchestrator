@@ -14,7 +14,7 @@ import java.util.List;
 @EqualsAndHashCode
 public class Investigation {
     private int 				  id;
-    private int 				  investigationId;
+    private String 				  investigationId;
     private Person                person;
     private List<CriminalRecord>  criminalRecords;
     private List<Qualification>   qualifications;
