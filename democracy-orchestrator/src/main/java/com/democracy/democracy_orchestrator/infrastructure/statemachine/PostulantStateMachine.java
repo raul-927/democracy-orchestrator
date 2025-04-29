@@ -226,6 +226,9 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         criminalRecordList.forEach(crr->{
                             System.out.println("CRR: "+crr.getCriminalRecordDescription());
                         });
+                        investigation.getCriminalRecords().forEach(cr2->{
+                            System.out.println("CR2: "+cr2.getCriminalRecordDescription());
+                        });
                     })
                     .subscribe(result ->{
                         criminalRecordList.add(result);
