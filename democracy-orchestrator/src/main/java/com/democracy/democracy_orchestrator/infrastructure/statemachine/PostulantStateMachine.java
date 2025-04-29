@@ -219,14 +219,89 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     .body(selectPerson)
                     .retrieve()
                     .bodyToFlux(CriminalRecord.class);
-
-            criminalRecordFlux.doOnComplete(()->{
-
-            })
+            List<CriminalRecord> criminalRecordList = new ArrayList<>();
+            criminalRecordFlux
+                    .doOnComplete(()->{
+                        investigation.setCriminalRecords(criminalRecordList);
+                        criminalRecordList.forEach(crr->{
+                            System.out.println("CRR: "+crr.getCriminalRecordDescription());
+                        });
+                    })
                     .subscribe(result ->{
-                        List<CriminalRecord> criminalRecordList = new ArrayList<>();
+                        criminalRecordList.add(result);
                         System.out.println("CRIMINAL_RECORD: "+result.getCriminalRecordDescription());
                     });
+        };
+    }
+
+
+    @Bean
+    public Action<PostulationStates, PostulationEvents> validateQualificationAction() {
+        return context ->{
+            System.out.println("Init action validateQualificationAction...");
+            var isValid = false;
+            postulantTrigger.validateCriminalRecords(Mono.just(
+                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
+                            .build()
+            ));
+            System.out.println("IS_VALID: "+isValid);
+            System.out.println("Document validate Action: ");
+        };
+    }
+
+    @Bean
+    public Action<PostulationStates, PostulationEvents> obtainDocumentAction() {
+        return context ->{
+            System.out.println("Init action obtainDocumentAction...");
+            var isValid = false;
+            postulantTrigger.validateCriminalRecords(Mono.just(
+                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
+                            .build()
+            ));
+            System.out.println("IS_VALID: "+isValid);
+            System.out.println("Document Obtained Action: ");
+        };
+    }
+
+    @Bean
+    public Action<PostulationStates, PostulationEvents> validateDocumentAction() {
+        return context ->{
+            System.out.println("Init action validateDocumentAction...");
+            var isValid = false;
+            postulantTrigger.validateCriminalRecords(Mono.just(
+                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
+                            .build()
+            ));
+            System.out.println("IS_VALID: "+isValid);
+            System.out.println("Document validate Action: ");
+        };
+    }
+
+    @Bean
+    public Action<PostulationStates, PostulationEvents> obtainInstituteAction() {
+        return context ->{
+            System.out.println("Init action obtainInstituteAction...");
+            var isValid = false;
+            postulantTrigger.validateCriminalRecords(Mono.just(
+                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
+                            .build()
+            ));
+            System.out.println("IS_VALID: "+isValid);
+            System.out.println("Document validate Action: ");
+        };
+    }
+
+    @Bean
+    public Action<PostulationStates, PostulationEvents> validateInstituteAction() {
+        return context ->{
+            System.out.println("Init action validateInstituteAction...");
+            var isValid = false;
+            postulantTrigger.validateCriminalRecords(Mono.just(
+                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
+                            .build()
+            ));
+            System.out.println("IS_VALID: "+isValid);
+            System.out.println("Document validate Action: ");
         };
     }
 
@@ -250,7 +325,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             System.out.println("Init action completedAction...");
         };
     }
-    //------------------------------------GUARDS------------------------------------------------------------------------
+    //----------------------------------------------GUARDS--------------------------------------------------------------
 
     @Bean
     public Guard<PostulationStates, PostulationEvents> guardValidatePersons() {
