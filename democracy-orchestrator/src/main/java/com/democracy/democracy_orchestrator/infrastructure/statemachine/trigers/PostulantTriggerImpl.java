@@ -70,7 +70,4 @@ public class PostulantTriggerImpl implements PostulantTrigger{
         stateMachine.sendEvent(event)
                 .subscribe(result -> System.out.println("RESULT validateCompleteActionTrigger: "+result.getResultType()));
     }
-
-
-
 }

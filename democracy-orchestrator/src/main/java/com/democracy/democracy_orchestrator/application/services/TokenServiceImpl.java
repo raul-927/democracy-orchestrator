@@ -16,25 +16,25 @@ import java.util.Objects;
 @Service
 public class TokenServiceImpl implements TokenService{
 
-    //@Value("${client-id}")
-    private final String clientId = "democracy_client";
+    @Value("${keycloak.client-id}")
+    private String clientId;// = "democracy_client";
 
-    //@Value("${client-secret}")
-    private final String clientSecret = "YYcdVQO1lB9F5IjxjN6ljHueBWhZz1aZ";
+    @Value("${keycloak.client-secret}")
+    private  String clientSecret;// = "YYcdVQO1lB9F5IjxjN6ljHueBWhZz1aZ";
 
-    //@Value("${gran-type}")
-    private final String granType = "password";
+    @Value("${keycloak.gran-type}")
+    private  String granType;// = "password";
 
-    //@Value("${user-name}")
-    private final String userName ="raraherher9274";
+    @Value("${keycloak.user-name}")
+    private  String userName;// ="raraherher9274";
 
-    //@Value("${password}")
-    private final String password ="raraherher9274";
+    @Value("${keycloak.password}")
+    private  String password;// ="raraherher9274";
 
-    //@Value("${url}")
-    private final String url = "http://localhost:8181/realms/democracy_realm/protocol/openid-connect/token";
+    @Value("${keycloak.url}")
+    private  String url;// = "http://localhost:8181/realms/democracy_realm/protocol/openid-connect/token";
 
-    //@Override
+    @Override
     public String obtainToken(){
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();

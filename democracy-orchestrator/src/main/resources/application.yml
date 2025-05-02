@@ -55,3 +55,10 @@ endpoints:
       web:
         exposure:
           include: all
+keycloak:
+  client-id: democracy_client
+  client-secret: YYcdVQO1lB9F5IjxjN6ljHueBWhZz1aZ
+  gran-type: password
+  user-name: raraherher9274
+  password: raraherher9274
+  url: http://localhost:8181/realms/democracy_realm/protocol/openid-connect/token
