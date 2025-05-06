@@ -4,10 +4,7 @@ package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
 import com.democracy.democracy_orchestrator.application.services.PersonService;
 import com.democracy.democracy_orchestrator.application.services.TokenService;
-import com.democracy.democracy_orchestrator.domain.models.CriminalRecord;
-import com.democracy.democracy_orchestrator.domain.models.Investigation;
-import com.democracy.democracy_orchestrator.domain.models.Person;
-import com.democracy.democracy_orchestrator.domain.models.Profession;
+import com.democracy.democracy_orchestrator.domain.models.*;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.PostulationStates;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTriggerImpl;
@@ -24,6 +21,7 @@ import org.springframework.statemachine.config.builders.StateMachineConfiguratio
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.guard.Guard;
+import org.springframework.statemachine.guard.ReactiveGuard;
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.transition.Transition;
@@ -78,11 +76,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         .target(PostulationStates.PERSON_VALIDATED)
                             .event(PostulationEvents.VALIDATE_PERSON)
                                 .action(validatePersonAction())
-               /* .and()
-                .withChoice()
-                    .source(PostulationStates.PERSON_VALIDATED)
-                        .first(PostulationStates.PROFESSION_VALIDATED, guardValidatePersons())
-                            .last(PostulationStates.NOT_VALID)*/
                 .and()
                 .withExternal()
                     .source(PostulationStates.PERSON_VALIDATED)
@@ -95,23 +88,28 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         .target(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
                             .event(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
                                 .action(criminalRecordsAction())
+                /*.and()
+                .withChoice()
+                    .source(PostulationStates.PERSON_VALIDATED)
+                        .first(PostulationStates.PROFESSION_VALIDATED, guardValidatePersons())
+                            .last(PostulationStates.NOT_VALID)*/
                 .and()
                 .withExternal()
                     .source(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
+                        .target(PostulationStates.QUALIFICATION_VALIDATED)
+                            .event(PostulationEvents.VALIDATE_QUALIFICATION)
+                                .action(validateQualificationAction())
+                .and()
+                .withExternal()
+                    .source(PostulationStates.QUALIFICATION_VALIDATED)
                         .target(PostulationStates.DOCUMENTS_VALIDATED)
                             .event(PostulationEvents.VALIDATE_DOCUMENTS)
-                                .action(validateDocumentsAction())
+                                .action(completedAction())
                 .and()
                 .withExternal()
                     .source(PostulationStates.DOCUMENTS_VALIDATED)
                         .target(PostulationStates.COMPLETED)
                             .event(PostulationEvents.COMPLETE)
-                                .action(completedAction())
-                .and()
-                .withExternal()
-                    .source(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
-                        .target(PostulationStates.CANCELLED)
-                            .event(PostulationEvents.CANCEL)
                 .and()
                 .withExternal()
                     .source(PostulationStates.PROFESSION_VALIDATED)
@@ -229,6 +227,11 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         investigation.getCriminalRecords().forEach(cr2->{
                             System.out.println("CR2: "+cr2.getCriminalRecordDescription());
                         });
+
+                        postulantTrigger.validateQualification(Mono.just(
+                                MessageBuilder.withPayload(PostulationEvents.VALIDATE_QUALIFICATION)
+                                        .setHeader("person",investigation.getPerson())
+                                        .build()));
                     })
                     .subscribe(result ->{
                         criminalRecordList.add(result);
@@ -243,10 +246,17 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return context ->{
             System.out.println("Init action validateQualificationAction...");
             var isValid = false;
-            postulantTrigger.validateCriminalRecords(Mono.just(
-                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
-                            .build()
-            ));
+            Person person = (Person)context.getMessageHeader("person");
+            BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
+            Flux<Qualification> qualificationFlux = webClient.post()
+                    .uri("http://localhost:8082/humanresources/qualification/select")
+                    .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
+                    .body(selectPerson)
+                    .retrieve()
+                    .bodyToFlux(Qualification.class);
+            qualificationFlux.subscribe( result ->{
+                System.out.println("QUALIFICATION_DOCUMENT: "+result.getDocument());
+            });
             System.out.println("IS_VALID: "+isValid);
             System.out.println("Document validate Action: ");
         };
@@ -347,7 +357,21 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
 
             @Override
             public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
+
                 return false;
+            }
+        };
+    }
+
+    @Bean
+    public ReactiveGuard<PostulationStates, PostulationEvents> guardValidateDocuments2() {
+
+
+        return new ReactiveGuard<PostulationStates, PostulationEvents>() {
+            @Override
+            public Mono<Boolean> apply(StateContext<PostulationStates, PostulationEvents> postulationStatesPostulationEventsStateContext) {
+                postulationStatesPostulationEventsStateContext.getMessageHeader("");
+                return null;
             }
         };
     }

@@ -51,6 +51,13 @@ public class PostulantTriggerImpl implements PostulantTrigger{
     }
 
     @Override
+    public void validateQualification(Mono<Message<PostulationEvents>> event){
+        System.out.println("Validate qualification...");
+        stateMachine.sendEvent(event)
+                .subscribe(result -> System.out.println("RESULT validateQualificationTrigger: "+result.getResultType()));
+    }
+
+    @Override
     public void validateDocument(Mono<Message<PostulationEvents>> event){
         System.out.println("Validate documents...");
         stateMachine.sendEvent(event)

@@ -11,5 +11,6 @@ public interface PostulantTrigger {
     void validateProfession(Mono<Message<PostulationEvents>> event);
     void validateDocument(Mono<Message<PostulationEvents>> event);
     void validateCriminalRecords(Mono<Message<PostulationEvents>> event);
+    void validateQualification(Mono<Message<PostulationEvents>> event);
     void validateCompletedAction(Mono<Message<PostulationEvents>> event);
 }

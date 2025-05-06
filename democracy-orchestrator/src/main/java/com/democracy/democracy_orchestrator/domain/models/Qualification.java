@@ -1,11 +1,8 @@
 package com.democracy.democracy_orchestrator.domain.models;
 
 
-
 import lombok.*;
 import lombok.experimental.Accessors;
-
-import java.util.List;
 
 @ToString
 @Getter
@@ -16,11 +13,11 @@ import java.util.List;
 @Builder
 @EqualsAndHashCode
 public class Qualification {
-
     private int 			id;
-    private int 			qualificationId;
-    private Institute       institute;
-    private List<Document>  documents;
+    private String 			qualificationId;
+    private Person          person;
+    private Institute 		institute;
+    private Document        document;
     private boolean 		verified;
     private boolean			approved;
 }
