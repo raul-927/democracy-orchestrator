@@ -254,8 +254,13 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     .body(selectPerson)
                     .retrieve()
                     .bodyToFlux(Qualification.class);
-            qualificationFlux.subscribe( result ->{
+            qualificationFlux.doOnComplete(()->{
+
+            }).subscribe( result ->{
+                System.out.println("QUALIFICATION_DOCUMENT_IS_APPROVED: "+result.getDocument().isDocumentApproved());
                 System.out.println("QUALIFICATION_DOCUMENT: "+result.getDocument());
+                System.out.println("IS_APPROVED:"+result.isApproved());
+
             });
             System.out.println("IS_VALID: "+isValid);
             System.out.println("Document validate Action: ");
