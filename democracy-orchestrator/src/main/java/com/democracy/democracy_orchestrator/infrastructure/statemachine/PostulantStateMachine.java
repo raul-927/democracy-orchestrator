@@ -1,5 +1,6 @@
 package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
+import com.democracy.democracy_orchestrator.application.services.InvestigationService;
 import com.democracy.democracy_orchestrator.application.services.TokenService;
 import com.democracy.democracy_orchestrator.domain.models.*;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
@@ -40,6 +41,9 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     private PostulantTriggerImpl postulantTrigger;
 
     @Autowired
+    private InvestigationService investigationService;
+
+    @Autowired
     private WebClient webClient;
 
     @Autowired
@@ -48,6 +52,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     private Profession profession;
 
     private Document document;
+
+
 
     private Investigation investigation;
 
@@ -130,7 +136,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             public void transition(Transition<PostulationStates, PostulationEvents> transition){
                 System.out.println("LISTENER...");
                 if(transition!=null && transition.getSource()!=null && transition.getSource().getId()!=null){
-                    System.out.println("Transitioning form "+ transition.getSource().getId()
+                    System.out.println("Transitioning from "+ transition.getSource().getId()
                             +" to "+transition.getTarget().getId());
                 }
             };
@@ -258,6 +264,16 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                                 .build()
                 ));
             }).subscribe( result ->{
+                List<Qualification> qualifications = new ArrayList<>();
+                qualifications.add(result);
+                investigation.setQualifications(qualifications);
+                BodyInserter<Investigation, ReactiveHttpOutputMessage> insertInvestigation = BodyInserters.fromValue(investigation);
+                Flux<Investigation> investigationFlux = webClient
+                        .post()
+                        .uri("http://localhost:8082/humanresources/investigation/insert")
+                        .body(insertInvestigation)
+                        .retrieve()
+                        .bodyToFlux(Investigation.class);
                 document = result.getDocument();
                 System.out.println("QUALIFICATION_DOCUMENT_IS_APPROVED: "+result.getDocument().isDocumentApproved());
                 System.out.println("QUALIFICATION_DOCUMENT: "+result.getDocument());
