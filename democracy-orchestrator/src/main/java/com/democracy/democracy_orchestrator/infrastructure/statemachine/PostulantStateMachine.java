@@ -34,7 +34,6 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Configuration
 @EnableStateMachineFactory(name ="postulantStateMachineFactory")
@@ -53,6 +52,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     private TokenService tokenService;
 
     private Profession profession;
+
+    private Document document;
 
     private Investigation investigation;
 
@@ -104,12 +105,13 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     .source(PostulationStates.QUALIFICATION_VALIDATED)
                         .target(PostulationStates.DOCUMENTS_VALIDATED)
                             .event(PostulationEvents.VALIDATE_DOCUMENTS)
-                                .action(completedAction())
+                                .action(validateDocumentAction())
                 .and()
                 .withExternal()
                     .source(PostulationStates.DOCUMENTS_VALIDATED)
                         .target(PostulationStates.COMPLETED)
                             .event(PostulationEvents.COMPLETE)
+                                .action(completedAction())
                 .and()
                 .withExternal()
                     .source(PostulationStates.PROFESSION_VALIDATED)
@@ -248,6 +250,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             var isValid = false;
             Person person = (Person)context.getMessageHeader("person");
             BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
+
             Flux<Qualification> qualificationFlux = webClient.post()
                     .uri("http://localhost:8082/humanresources/qualification/select")
                     .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
@@ -255,8 +258,13 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     .retrieve()
                     .bodyToFlux(Qualification.class);
             qualificationFlux.doOnComplete(()->{
-
+                postulantTrigger.validateDocument(Mono.just(
+                        MessageBuilder.withPayload(PostulationEvents.VALIDATE_DOCUMENTS)
+                                .setHeader("document", document)
+                                .build()
+                ));
             }).subscribe( result ->{
+                document = result.getDocument();
                 System.out.println("QUALIFICATION_DOCUMENT_IS_APPROVED: "+result.getDocument().isDocumentApproved());
                 System.out.println("QUALIFICATION_DOCUMENT: "+result.getDocument());
                 System.out.println("IS_APPROVED:"+result.isApproved());
@@ -284,13 +292,25 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> validateDocumentAction() {
         return context ->{
+            Document document = (Document)context.getMessageHeader("document");
+            BodyInserter<Document, ReactiveHttpOutputMessage> selectDocument= BodyInserters.fromValue(document);
+            Flux<Document> documentFlux = webClient.post()
+                    .uri("http://localhost:8082/humanresources/document/select")
+                    .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
+                    .body(selectDocument)
+                    .retrieve()
+                    .bodyToFlux(Document.class);
             System.out.println("Init action validateDocumentAction...");
-            var isValid = false;
-            postulantTrigger.validateCriminalRecords(Mono.just(
-                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
-                            .build()
-            ));
-            System.out.println("IS_VALID: "+isValid);
+            documentFlux.doOnComplete(()->{
+                postulantTrigger.validateCompletedAction(Mono.just(
+                        MessageBuilder.withPayload(PostulationEvents.COMPLETE)
+                                .build()
+                ));
+            }).subscribe(result ->{
+                var isValid = result.isDocumentApproved();
+                System.out.println("IS_VALID: "+isValid);
+            });
+
             System.out.println("Document validate Action: ");
         };
     }
@@ -341,6 +361,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public Action<PostulationStates, PostulationEvents> completedAction() {
         return context ->{
             System.out.println("Init action completedAction...");
+            postulantTrigger.stopPostulationSaga();
+            System.out.println("End action completeAction.");
         };
     }
     //----------------------------------------------GUARDS--------------------------------------------------------------
