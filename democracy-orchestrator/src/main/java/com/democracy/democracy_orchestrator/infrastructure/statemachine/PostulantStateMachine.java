@@ -1,6 +1,5 @@
 package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
-import com.democracy.democracy_orchestrator.application.services.PersonService;
 import com.democracy.democracy_orchestrator.application.services.TokenService;
 import com.democracy.democracy_orchestrator.domain.models.*;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
@@ -39,9 +38,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
 
     @Autowired
     private PostulantTriggerImpl postulantTrigger;
-
-    @Autowired
-    private PersonService personService;
 
     @Autowired
     private WebClient webClient;
