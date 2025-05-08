@@ -332,17 +332,4 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             }
         };
     }
-
-    @Bean
-    public ReactiveGuard<PostulationStates, PostulationEvents> guardValidateDocuments2() {
-
-
-        return new ReactiveGuard<PostulationStates, PostulationEvents>() {
-            @Override
-            public Mono<Boolean> apply(StateContext<PostulationStates, PostulationEvents> postulationStatesPostulationEventsStateContext) {
-                postulationStatesPostulationEventsStateContext.getMessageHeader("");
-                return null;
-            }
-        };
-    }
 }
