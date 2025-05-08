@@ -53,8 +53,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
 
     private Document document;
 
-
-
+    private Boolean isValidDocument;
     private Investigation investigation;
 
     @Override
@@ -62,11 +61,10 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         states
                 .withStates()
                 .initial(PostulationStates.NEW)
-                //.state(PostulationStates.DOCUMENTS_VALIDATED)
-                .states(EnumSet.allOf(PostulationStates.class))
+                .choice(PostulationStates.DOCUMENTS_CHOICE)
                 .end(PostulationStates.COMPLETED)
                 .end(PostulationStates.CANCELLED)
-                .end(PostulationStates.NOT_VALID);
+                .states(EnumSet.allOf(PostulationStates.class));
     }
 
     @Override
@@ -89,11 +87,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         .target(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
                             .event(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
                                 .action(criminalRecordsAction())
-                /*.and()
-                .withChoice()
-                    .source(PostulationStates.PERSON_VALIDATED)
-                        .first(PostulationStates.PROFESSION_VALIDATED, guardValidatePersons())
-                            .last(PostulationStates.NOT_VALID)*/
                 .and()
                 .withExternal()
                     .source(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
@@ -103,14 +96,24 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 .and()
                 .withExternal()
                     .source(PostulationStates.QUALIFICATION_VALIDATED)
-                        .target(PostulationStates.DOCUMENTS_VALIDATED)
+                        .target(PostulationStates.DOCUMENT_SEND_CHOICE)
                             .event(PostulationEvents.VALIDATE_DOCUMENTS)
                                 .action(validateDocumentAction())
                 .and()
                 .withExternal()
+                .source(PostulationStates.DOCUMENT_SEND_CHOICE)
+                    .target(PostulationStates.DOCUMENTS_CHOICE)
+                        .event(PostulationEvents.SEND_CHOICE)
+                .and()
+                .withChoice()
+                    .source(PostulationStates.DOCUMENTS_CHOICE)
+                        .first(PostulationStates.DOCUMENTS_VALIDATED, guardIsValidDocuments())
+                            .last(PostulationStates.NOT_VALID)
+                .and()
+                .withExternal()
                     .source(PostulationStates.DOCUMENTS_VALIDATED)
                         .target(PostulationStates.COMPLETED)
-                            .event(PostulationEvents.COMPLETE)
+                            //.event(PostulationEvents.COMPLETE)
                                 .action(completedAction())
                 .and()
                 .withExternal()
@@ -121,7 +124,12 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 .withExternal()
                     .source(PostulationStates.DOCUMENTS_VALIDATED)
                         .target(PostulationStates.CANCELLED)
-                            .event(PostulationEvents.CANCEL);
+                            .event(PostulationEvents.CANCEL)
+                .and()
+                .withExternal()
+                    .source(PostulationStates.NOT_VALID)
+                        .target(PostulationStates.COMPLETED)
+                            .action(notValidAction());
     }
 
     @Override
@@ -160,7 +168,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
 
             personFlux
                     .doOnComplete(()->{
-                        System.out.println("PROFESSION1: "+profession);
                         postulantTrigger.validateProfession(Mono.just(
                                 MessageBuilder.withPayload(PostulationEvents.VALIDATE_PROFESSION)
                                         .setHeader("profession",profession)
@@ -187,23 +194,15 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             System.out.println("Init action validateProfessionAction...");
             System.out.println(context.getStateMachine().getState().getId());
             Profession profession = (Profession)context.getMessageHeader("profession");
-            System.out.println("PROFESSION2: "+profession);
-
            professionFlux.
             doOnComplete(()->{
-                System.out.println("INVESTIGATION_PERSON: "+investigation.getPerson().getCedula());
                 postulantTrigger.validateCriminalRecords(Mono.just(
                         MessageBuilder
                                 .withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
                                 .setHeader("person",investigation.getPerson())
                                 .build()
                 ));
-            System.out.println("Profession validate Action");
-        }).subscribe(result->{
-               if(result.getProfessionId().equals(profession.getProfessionId())){
-                   System.out.println("SON IGUALES");
-               }
-           });
+        }).subscribe();
         };
     }
 
@@ -224,10 +223,10 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     .doOnComplete(()->{
                         investigation.setCriminalRecords(criminalRecordList);
                         criminalRecordList.forEach(crr->{
-                            System.out.println("CRR: "+crr.getCriminalRecordDescription());
+
                         });
                         investigation.getCriminalRecords().forEach(cr2->{
-                            System.out.println("CR2: "+cr2.getCriminalRecordDescription());
+
                         });
 
                         postulantTrigger.validateQualification(Mono.just(
@@ -235,10 +234,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                                         .setHeader("person",investigation.getPerson())
                                         .build()));
                     })
-                    .subscribe(result ->{
-                        criminalRecordList.add(result);
-                        System.out.println("CRIMINAL_RECORD: "+result.getCriminalRecordDescription());
-                    });
+                    .subscribe(criminalRecordList::add);
         };
     }
 
@@ -275,27 +271,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         .retrieve()
                         .bodyToFlux(Investigation.class);
                 document = result.getDocument();
-                System.out.println("QUALIFICATION_DOCUMENT_IS_APPROVED: "+result.getDocument().isDocumentApproved());
-                System.out.println("QUALIFICATION_DOCUMENT: "+result.getDocument());
-                System.out.println("IS_APPROVED:"+result.isApproved());
-
             });
-            System.out.println("IS_VALID: "+isValid);
-            System.out.println("Document validate Action: ");
-        };
-    }
-
-    @Bean
-    public Action<PostulationStates, PostulationEvents> obtainDocumentAction() {
-        return context ->{
-            System.out.println("Init action obtainDocumentAction...");
-            var isValid = false;
-            postulantTrigger.validateCriminalRecords(Mono.just(
-                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
-                            .build()
-            ));
-            System.out.println("IS_VALID: "+isValid);
-            System.out.println("Document Obtained Action: ");
         };
     }
 
@@ -311,59 +287,16 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     .retrieve()
                     .bodyToFlux(Document.class);
             System.out.println("Init action validateDocumentAction...");
+
             documentFlux.doOnComplete(()->{
-                postulantTrigger.validateCompletedAction(Mono.just(
-                        MessageBuilder.withPayload(PostulationEvents.COMPLETE)
-                                .build()
-                ));
+                postulantTrigger.sendEvent("validateDocumentAction",Mono.just(
+                        MessageBuilder.withPayload(PostulationEvents.SEND_CHOICE)
+                                .setHeader("isValidDocument",isValidDocument)
+                                .build()));
             }).subscribe(result ->{
-                var isValid = result.isDocumentApproved();
-                System.out.println("IS_VALID: "+isValid);
+                isValidDocument = result.isDocumentApproved();
+                System.out.println("DOCUMENT_IS_VALID: "+isValidDocument);
             });
-
-            System.out.println("Document validate Action: ");
-        };
-    }
-
-    @Bean
-    public Action<PostulationStates, PostulationEvents> obtainInstituteAction() {
-        return context ->{
-            System.out.println("Init action obtainInstituteAction...");
-            var isValid = false;
-            postulantTrigger.validateCriminalRecords(Mono.just(
-                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
-                            .build()
-            ));
-            System.out.println("IS_VALID: "+isValid);
-            System.out.println("Document validate Action: ");
-        };
-    }
-
-    @Bean
-    public Action<PostulationStates, PostulationEvents> validateInstituteAction() {
-        return context ->{
-            System.out.println("Init action validateInstituteAction...");
-            var isValid = false;
-            postulantTrigger.validateCriminalRecords(Mono.just(
-                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
-                            .build()
-            ));
-            System.out.println("IS_VALID: "+isValid);
-            System.out.println("Document validate Action: ");
-        };
-    }
-
-    @Bean
-    public Action<PostulationStates, PostulationEvents> validateDocumentsAction() {
-        return context ->{
-            System.out.println("Init action validateDocumentsAction...");
-            var isValid = false;
-            postulantTrigger.validateCriminalRecords(Mono.just(
-                    MessageBuilder.withPayload(PostulationEvents.VALIDATE_CRIMINAL_RECORDS)
-                            .build()
-            ));
-            System.out.println("IS_VALID: "+isValid);
-            System.out.println("Document validate Action: ");
         };
     }
 
@@ -375,27 +308,27 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             System.out.println("End action completeAction.");
         };
     }
-    //----------------------------------------------GUARDS--------------------------------------------------------------
 
     @Bean
-    public Guard<PostulationStates, PostulationEvents> guardValidatePersons() {
-        return new Guard<PostulationStates, PostulationEvents>() {
-
-            @Override
-            public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
-                return false;
-            }
+    public Action<PostulationStates, PostulationEvents> notValidAction() {
+        return context ->{
+            System.out.println("Init action notValidAction...");
+            postulantTrigger.stopPostulationSaga();
+            System.out.println("End action notValidAction.");
         };
     }
+    //----------------------------------------------GUARDS--------------------------------------------------------------
+
 
     @Bean
-    public Guard<PostulationStates, PostulationEvents> guardValidateDocuments() {
+    public Guard<PostulationStates, PostulationEvents> guardIsValidDocuments() {
         return new Guard<PostulationStates, PostulationEvents>() {
 
             @Override
             public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
-
-                return false;
+                Boolean documentValid = (Boolean)context.getMessageHeader("isValidDocument");
+                System.out.println("DOCUMENT_GUARD: "+documentValid);
+                return documentValid;
             }
         };
     }

@@ -38,6 +38,13 @@ public class PostulantTriggerImpl implements PostulantTrigger{
     }
 
     @Override
+    public void sendEvent(String eventDescription, Mono<Message<PostulationEvents>> event) {
+        System.out.println(eventDescription+"...");
+        stateMachine.sendEvent(event)
+                .subscribe(result -> System.out.println("RESULT "+eventDescription+"Trigger: "+result.getResultType()));
+    }
+
+    @Override
     public void validatePerson(Mono<Message<PostulationEvents>> event){
         System.out.println("Validate person...");
         stateMachine.sendEvent(event)

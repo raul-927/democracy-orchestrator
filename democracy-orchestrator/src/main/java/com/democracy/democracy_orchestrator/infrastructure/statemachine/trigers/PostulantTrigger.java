@@ -7,6 +7,7 @@ import reactor.core.publisher.Mono;
 public interface PostulantTrigger {
     void initPostulationSaga();
     void stopPostulationSaga();
+    void sendEvent(String eventDescription,Mono<Message<PostulationEvents>> event);
     void validatePerson(Mono<Message<PostulationEvents>> event);
     void validateProfession(Mono<Message<PostulationEvents>> event);
     void validateDocument(Mono<Message<PostulationEvents>> event);
