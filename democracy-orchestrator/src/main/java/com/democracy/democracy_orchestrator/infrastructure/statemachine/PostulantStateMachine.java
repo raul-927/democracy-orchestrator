@@ -172,6 +172,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                                 MessageBuilder.withPayload(PostulationEvents.VALIDATE_PROFESSION)
                                         .setHeader("profession",profession)
                                         .build()));
+                        profession = null;
                     })
                     .subscribe(result->{
                         investigation = new Investigation();
@@ -193,7 +194,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     .bodyToFlux(Profession.class);
             System.out.println("Init action validateProfessionAction...");
             System.out.println(context.getStateMachine().getState().getId());
-            Profession profession = (Profession)context.getMessageHeader("profession");
            professionFlux.
             doOnComplete(()->{
                 postulantTrigger.validateCriminalRecords(Mono.just(
