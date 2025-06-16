@@ -259,6 +259,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 ));
             }).subscribe( result ->{
                        isValidProfession = result.getProfessionId() !=null;
+                       investigation.getPerson().setProfession(result);
                 });
         };
     }
@@ -339,6 +340,9 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                                 .build()));
             }).subscribe(result ->{
                 isValidDocument = result.isDocumentApproved();
+                investigation.getQualifications().forEach(qualification->{
+                    qualification.setDocument(result);
+                });
             });
         };
     }
