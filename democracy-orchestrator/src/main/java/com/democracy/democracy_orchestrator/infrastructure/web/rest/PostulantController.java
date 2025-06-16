@@ -36,14 +36,20 @@ public class PostulantController {
 
     @PostMapping("/investigation/select")
     public Mono<Integer> getInvestigation(@RequestBody Person person){
-
-        System.out.println("CEDULA: "+person.getCedula());
         postulantTrigger.initPostulationSaga();
-        postulantTrigger.validatePerson(Mono.just(
+        postulantTrigger.sendEvent("VALIDATE_PERSON", Mono.just(
                 MessageBuilder.withPayload(PostulationEvents.VALIDATE_PERSON)
                         .setHeader("cedula", person.getCedula())
                         .build()));
         return Mono.just(person.getCedula());
+    }
+
+    @PostMapping("/investigation/validateProfession")
+    public Mono<Integer> getValidateProfession(){
+        postulantTrigger.sendEvent("VALIDATE_PROFESSION", Mono.just(
+                MessageBuilder.withPayload(PostulationEvents.VALIDATE_PROFESSION)
+                        .build()));
+        return Mono.just(1);
     }
 
 

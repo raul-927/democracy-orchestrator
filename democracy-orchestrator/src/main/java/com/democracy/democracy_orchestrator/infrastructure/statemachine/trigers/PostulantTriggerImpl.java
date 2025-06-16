@@ -10,6 +10,8 @@ import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+
 @Component
 public class PostulantTriggerImpl implements PostulantTrigger{
 
@@ -25,7 +27,7 @@ public class PostulantTriggerImpl implements PostulantTrigger{
         System.out.println("Initializing initPostulationSaga");
         stateMachine = orderStateMachineFactory.getStateMachine();
         stateMachine.startReactively().subscribe();
-        System.out.println("Final state initPostulationSaga: "+stateMachine.getState().getId());
+        System.out.println("Initialize state machine in state: "+stateMachine.getState().getId());
     }
 
     @Override
@@ -39,49 +41,19 @@ public class PostulantTriggerImpl implements PostulantTrigger{
 
     @Override
     public void sendEvent(String eventDescription, Mono<Message<PostulationEvents>> event) {
-        System.out.println(eventDescription+"...");
+        System.out.println("Initialize sendEvent: "+eventDescription+"...");
         stateMachine.sendEvent(event)
-                .subscribe(result -> System.out.println("RESULT "+eventDescription+"Trigger: "+result.getResultType()));
+                .subscribe(result -> System.out.println("SEND_EVENT: "+eventDescription+" Trigger: "+result.getResultType()));
     }
 
-    @Override
-    public void validatePerson(Mono<Message<PostulationEvents>> event){
-        System.out.println("Validate person...");
-        stateMachine.sendEvent(event)
-                .subscribe(result -> System.out.println("RESULT validatePersonTrigger: "+result.getResultType()));
-    }
-    @Override
-    public void validateProfession(Mono<Message<PostulationEvents>> event){
-        System.out.println("Validate professions...");
-        stateMachine.sendEvent(event)
-                .subscribe(result -> System.out.println("RESULT validateProfessionTrigger: "+result.getResultType()));
-    }
 
-    @Override
-    public void validateQualification(Mono<Message<PostulationEvents>> event){
-        System.out.println("Validate qualification...");
-        stateMachine.sendEvent(event)
-                .subscribe(result -> System.out.println("RESULT validateQualificationTrigger: "+result.getResultType()));
-    }
 
-    @Override
-    public void validateDocument(Mono<Message<PostulationEvents>> event){
-        System.out.println("Validate documents...");
-        stateMachine.sendEvent(event)
-                .subscribe(result -> System.out.println("RESULT validateDocumentTrigger: "+result.getResultType()));
-    }
 
-    @Override
-    public void validateCriminalRecords(Mono<Message<PostulationEvents>> event){
-        System.out.println("Validate criminalRecords...");
-        stateMachine.sendEvent(event)
-                .subscribe(result -> System.out.println("RESULT validateCriminalRecordsTrigger: "+result.getResultType()));
-    }
 
-    @Override
-    public void validateCompletedAction(Mono<Message<PostulationEvents>> event){
-        System.out.println("Validate completeAction...");
-        stateMachine.sendEvent(event)
-                .subscribe(result -> System.out.println("RESULT validateCompleteActionTrigger: "+result.getResultType()));
-    }
+
+
+
+
+
+
 }
