@@ -27,11 +27,11 @@ spring:
       scheme: http
       authentication: TOKEN
       token: 00000000-0000-0000-0000-000000000000
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
+  #rabbitmq:
+   # host: localhost
+   # port: 5672
+   # username: guest
+   # password: guest
 server:
   port: 0
 

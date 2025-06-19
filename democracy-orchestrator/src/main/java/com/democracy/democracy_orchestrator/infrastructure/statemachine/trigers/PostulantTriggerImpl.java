@@ -10,8 +10,6 @@ import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-
 @Component
 public class PostulantTriggerImpl implements PostulantTrigger{
 
