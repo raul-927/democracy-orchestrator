@@ -83,13 +83,15 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public void configure(StateMachineTransitionConfigurer<PostulationStates, PostulationEvents> transitions)throws Exception{
         transitions
                 .withExternal()
-                    .source(PostulationStates.NEW).target(PostulationStates.PERSON_VALIDATED)
+                    .source(PostulationStates.NEW)
+                        .target(PostulationStates.PERSON_VALIDATED)
                             .event(PostulationEvents.VALIDATE_PERSON)
                                 .action(validatePersonAction())
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.PERSON_VALIDATED).target(PostulationStates.IS_VALIDATED_PERSON)
+                    .source(PostulationStates.PERSON_VALIDATED)
+                        .target(PostulationStates.IS_VALIDATED_PERSON)
                             .event(PostulationEvents.SEND_RESULT_VALIDATED_PERSON)
 
                 .and()

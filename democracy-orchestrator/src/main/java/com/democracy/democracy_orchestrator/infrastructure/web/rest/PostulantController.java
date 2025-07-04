@@ -43,14 +43,4 @@ public class PostulantController {
                         .build()));
         return Mono.just(person.getCedula());
     }
-
-    @PostMapping("/investigation/validateProfession")
-    public Mono<Integer> getValidateProfession(){
-        postulantTrigger.sendEvent("VALIDATE_PROFESSION", Mono.just(
-                MessageBuilder.withPayload(PostulationEvents.VALIDATE_PROFESSION)
-                        .build()));
-        return Mono.just(1);
-    }
-
-
 }
