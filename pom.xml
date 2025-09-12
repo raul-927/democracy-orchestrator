@@ -4,11 +4,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.test</groupId>
-	<artifactId>feign-eureka</artifactId>
+	<artifactId>democracy-orchestrator</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
-	<name>feign-eureka</name>
+	<name>democracy-orchestrator</name>
 	<description>Demo project for Spring Cloud</description>
 
 	<parent>
