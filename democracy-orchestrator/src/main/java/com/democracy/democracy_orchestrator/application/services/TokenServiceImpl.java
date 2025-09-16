@@ -17,22 +17,22 @@ import java.util.Objects;
 public class TokenServiceImpl implements TokenService{
 
     @Value("${keycloak.client-id}")
-    private String clientId;// = "democracy_client";
+    private String clientId;
 
     @Value("${keycloak.client-secret}")
-    private  String clientSecret;// = "YYcdVQO1lB9F5IjxjN6ljHueBWhZz1aZ";
+    private  String clientSecret;
 
     @Value("${keycloak.gran-type}")
-    private  String granType;// = "password";
+    private  String granType;
 
     @Value("${keycloak.user-name}")
-    private  String userName;// ="raraherher9274";
+    private  String userName;
 
     @Value("${keycloak.password}")
-    private  String password;// ="raraherher9274";
+    private  String password;
 
     @Value("${keycloak.url}")
-    private  String url;// = "http://localhost:8181/realms/democracy_realm/protocol/openid-connect/token";
+    private  String url;
 
     @Override
     public String obtainToken(){
