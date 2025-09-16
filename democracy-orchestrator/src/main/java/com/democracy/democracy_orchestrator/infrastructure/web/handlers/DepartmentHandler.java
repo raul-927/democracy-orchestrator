@@ -16,9 +16,6 @@ import java.util.List;
 @Slf4j
 public class DepartmentHandler {
 
-    @Autowired
-    private DepartmentService departmentService;
-
     /*public Mono<ServerResponse> selectDepartment(ServerRequest request){
         var obtainDepartment = request.bodyToMono(Department.class);
         Department sendDepartment  = new Department();

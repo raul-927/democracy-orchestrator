@@ -76,6 +76,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 .choice(PostulationStates.IS_VALIDATED_DOCUMENTS)
                 .end(PostulationStates.COMPLETED)
                 .end(PostulationStates.CANCELLED)
+                .end(PostulationStates.ERROR)
                 .states(EnumSet.allOf(PostulationStates.class));
     }
 
@@ -182,7 +183,14 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 .withExternal()
                     .source(PostulationStates.NOT_VALID)
                         .target(PostulationStates.COMPLETED)
-                            .action(completedAction());
+                            .action(completedAction())
+                .and()
+                .withExternal()
+                .source(PostulationStates.OBTAIN_RESULTS)
+                .target(PostulationStates.ERROR)
+                .event(PostulationEvents.SEND_ERROR)
+                .action(completedAction())
+        ;
     }
 
     @Override
@@ -341,6 +349,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                                 .setHeader("isValidDocument",isValidDocument)
                                 .build()));
             }).subscribe(result ->{
+                System.out.println("DOCUMENT_ID: "+result.getDocumentId());
                 isValidDocument = result.isDocumentApproved();
                 investigation.getQualifications().forEach(qualification->{
                     qualification.setDocument(result);
@@ -373,11 +382,18 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 Flux<Investigation> investigationFlux = webClient
                         .post()
                         .uri("http://localhost:8082/humanresources/investigation/insert")
+                        .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
                         .body(insertInvestigation)
                         .retrieve()
-                        .bodyToFlux(Investigation.class);
+                        .bodyToFlux(Investigation.class)
+                        .doOnError( err ->{
+                            System.out.println("Error>: ");
+                        });
             postulantTrigger.stopPostulationSaga();
-            System.out.println("End action sendResultsInvestigationAction.");
+            investigationFlux.subscribe(result ->{
+                System.out.println("End action sendResultsInvestigationAction... "+result.getPerson().getPersonId());
+            });
+
         };
     }
 

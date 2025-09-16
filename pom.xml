@@ -23,6 +23,7 @@
 	</modules>
 
 	<properties>
+        <java.version>21</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<spring-cloud.version>Hoxton.SR11</spring-cloud.version>
 		<feign-reactor.version>2.0.31</feign-reactor.version>
@@ -60,49 +61,6 @@
 			<artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
 		</dependency>
 
-		<!-- Reactive Feign Dependencies -->
-        <!--
-		<dependency>
-			<groupId>com.playtika.reactivefeign</groupId>
-			<artifactId>feign-reactor-webclient</artifactId>
-			<version>${feign-reactor.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.playtika.reactivefeign</groupId>
-			<artifactId>feign-reactor-cloud2</artifactId>
-			<version>${feign-reactor.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.playtika.reactivefeign</groupId>
-			<artifactId>feign-reactor-spring-configuration</artifactId>
-			<version>${feign-reactor.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.playtika.reactivefeign</groupId>
-			<artifactId>feign-reactor-spring-cloud-starter</artifactId>
-			<version>3.2.6</version>
-			<type>pom</type>
-		</dependency>
-
-		<dependency>
-			<groupId>com.playtika.reactivefeign</groupId>
-			<artifactId>feign-reactor-webclient</artifactId>
-			<version>3.2.1</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.playtika.reactivefeign</groupId>
-			<artifactId>feign-reactor-core</artifactId>
-			<version>4.2.1</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.playtika.reactivefeign</groupId>
-			<artifactId>feign-reactor-spring-configuration</artifactId>
-			<version>3.2.1</version>
-		</dependency>
--->
 		<!-- https://mvnrepository.com/artifact/org.springframework/spring-webflux -->
 		<dependency>
 			<groupId>org.springframework</groupId>

@@ -1,8 +1,6 @@
 package com.democracy.democracy_orchestrator.infrastructure.web.routers;
 
 import com.democracy.democracy_orchestrator.infrastructure.web.constants.RoutesConstant;
-import com.democracy.democracy_orchestrator.infrastructure.web.handlers.DepartmentHandler;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 //import org.springframework.web.reactive.function.server.RouterFunction;
 //import org.springframework.web.reactive.function.server.RouterFunctions;
