@@ -387,7 +387,11 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         .retrieve()
                         .bodyToFlux(Investigation.class)
                         .doOnError( err ->{
-                            System.out.println("Error>: ");
+                            try {
+                                throw new RuntimeException("SE produjo un error");
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         });
             postulantTrigger.stopPostulationSaga();
             investigationFlux.subscribe(result ->{
