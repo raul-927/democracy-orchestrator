@@ -1,17 +1,18 @@
 package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
-import com.democracy.democracy_orchestrator.application.services.InvestigationService;
 import com.democracy.democracy_orchestrator.application.services.TokenService;
 import com.democracy.democracy_orchestrator.domain.models.*;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.PostulationStates;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTriggerImpl;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ReactiveHttpOutputMessage;
 import org.springframework.messaging.support.MessageBuilder;
-import org.springframework.security.core.parameters.P;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
@@ -20,30 +21,28 @@ import org.springframework.statemachine.config.builders.StateMachineConfiguratio
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.guard.Guard;
-import org.springframework.statemachine.guard.ReactiveGuard;
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.transition.Transition;
 import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-
+@Slf4j
 @Configuration
 @EnableStateMachineFactory(name ="postulantStateMachineFactory")
 public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<PostulationStates, PostulationEvents> {
 
-    @Autowired
-    private PostulantTriggerImpl postulantTrigger;
+    Logger LOGGER = LoggerFactory.getLogger(PostulantStateMachine.class);
 
     @Autowired
-    private InvestigationService investigationService;
+    private PostulantTriggerImpl postulantTrigger;
 
     @Autowired
     private WebClient webClient;
@@ -61,7 +60,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     private Boolean isValidCriminalRecord;
     private Boolean isValidQualification;
     private Boolean isValidDocument;
-    private Boolean zt;
     private Investigation investigation;
 
     @Override
@@ -203,10 +201,9 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return new StateMachineListenerAdapter<PostulationStates, PostulationEvents>(){
             @Override
             public void transition(Transition<PostulationStates, PostulationEvents> transition){
-                System.out.println("LISTENER...");
+                LOGGER.info("LISTENER...");
                 if(transition!=null && transition.getSource()!=null && transition.getSource().getId()!=null){
-                    System.out.println("Transitioning from "+ transition.getSource().getId()
-                            +" to "+transition.getTarget().getId());
+                    LOGGER.info("Transitioning from: {}, to: {}",transition.getSource().getId(), transition.getTarget().getId());
                 }
             };
         };
@@ -215,7 +212,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> validatePersonAction(){
         return context ->{
-            System.out.println("Init action validatePersonAction...");
+            LOGGER.info("Init action validatePersonAction...");
             Integer cedula = (Integer)context.getMessageHeader("cedula");
             Person person = new Person();
             person.setCedula(cedula);
@@ -248,7 +245,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> validateProfessionAction() {
         return context ->{
-            System.out.println("Init action validateProfessionAction...");
+            LOGGER.info("Init action validateProfessionAction...");
             BodyInserter<Profession, ReactiveHttpOutputMessage> selectProfession = BodyInserters.fromValue(profession);
             Flux<Profession> professionFlux = webClient.post()
                     .uri("http://localhost:8082/humanresources/profession/select")
@@ -258,7 +255,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     .bodyToFlux(Profession.class);
            professionFlux.
                    doOnError(err->{
-                       System.out.println("ERROR: "+err.getMessage());
+                       LOGGER.error("ERROR: {}", err.getMessage());
                    }).
             doOnComplete(()->{
                 postulantTrigger.sendEvent("VALIDATE_PROFESSION ",Mono.just(
@@ -277,7 +274,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> validateCriminalRecordAction() {
         return context ->{
-            System.out.println("Init action validateCriminalRecordAction...");
+            LOGGER.info("Init action validateCriminalRecordAction...");
             Person person = investigation.getPerson();
             BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
             Flux<CriminalRecord> criminalRecordFlux = webClient.post()
@@ -304,7 +301,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> validateQualificationAction() {
         return context ->{
-            System.out.println("Init action validateQualificationAction...");
+            LOGGER.info("Init action validateQualificationAction...");
             Person person = (Person)context.getMessageHeader("person");
             BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
 
@@ -334,7 +331,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> validateDocumentAction() {
         return context ->{
-            System.out.println("Init action validateDocumentAction...");
+            LOGGER.info("Init action validateDocumentAction...");
             Document document = (Document)context.getMessageHeader("document");
             BodyInserter<Document, ReactiveHttpOutputMessage> selectDocument= BodyInserters.fromValue(document);
             Flux<Document> documentFlux = webClient.post()
@@ -349,7 +346,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                                 .setHeader("isValidDocument",isValidDocument)
                                 .build()));
             }).subscribe(result ->{
-                System.out.println("DOCUMENT_ID: "+result.getDocumentId());
+                LOGGER.info("DOCUMENT_ID: {}",result.getDocumentId());
                 isValidDocument = result.isDocumentApproved();
                 investigation.getQualifications().forEach(qualification->{
                     qualification.setDocument(result);
@@ -368,16 +365,16 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         .body(insertInvestigation)
                         .retrieve()
                         .bodyToFlux(Investigation.class);*/
-            System.out.println("Init action completedAction...");
+            LOGGER.info("Init action completedAction...");
             postulantTrigger.stopPostulationSaga();
-            System.out.println("End action completeAction.");
+            LOGGER.info("End action completeAction.");
         };
     }
 
     @Bean
     public Action<PostulationStates, PostulationEvents> sendResultsInvestigationAction() {
         return context ->{
-            System.out.println("Init action sendResultsInvestigationAction...");
+            LOGGER.info("Init action sendResultsInvestigationAction...");
             BodyInserter<Investigation, ReactiveHttpOutputMessage> insertInvestigation = BodyInserters.fromValue(investigation);
                 Flux<Investigation> investigationFlux = webClient
                         .post()
@@ -387,15 +384,19 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         .retrieve()
                         .bodyToFlux(Investigation.class)
                         .doOnError( err ->{
-                            try {
-                                throw new RuntimeException("SE produjo un error");
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
+                            try{
+                                LOGGER.error("SE PRODUJO UN ERROR... {}", err.getMessage());
+                            }catch (WebClientResponseException erunt){
+                                LOGGER.error("Se captura el error de respuesta....");
+                            } catch (UnsupportedOperationException unsup){
+                                LOGGER.error("Se captura el error de respuesta.... UnsupportedOperationException");
+                            } catch (RuntimeException runtt){
+                                LOGGER.error("Se captura el error de respuesta.... {}", runtt.getMessage());
                             }
                         });
             postulantTrigger.stopPostulationSaga();
             investigationFlux.subscribe(result ->{
-                System.out.println("End action sendResultsInvestigationAction... "+result.getPerson().getPersonId());
+                LOGGER.info("End action sendResultsInvestigationAction... {}",result.getPerson().getPersonId());
             });
 
         };
@@ -404,9 +405,9 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> notValidAction() {
         return context ->{
-            System.out.println("Init action notValidAction...");
+            LOGGER.info("Init action notValidAction...");
             postulantTrigger.stopPostulationSaga();
-            System.out.println("End action notValidAction.");
+            LOGGER.info("End action notValidAction.");
         };
     }
 
@@ -419,8 +420,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             @Override
             public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
                 Boolean isPostulantValid = (Boolean)context.getMessageHeader("isValidPerson");
-                System.out.println("guardIsValidPerson: "+isPostulantValid);
-
+                LOGGER.info("guardIsValidPerson: {}",isPostulantValid);
                 return isPostulantValid;
             }
         };
@@ -433,8 +433,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             @Override
             public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
                 Boolean isValidProfession = (Boolean)context.getMessageHeader("sendIsValidProfession");
-                System.out.println("guardIsValidProfession: "+isValidProfession);
-
+                LOGGER.info("guardIsValidProfession: {}",isValidProfession);
                 return isValidProfession;
             }
         };
@@ -447,7 +446,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             @Override
             public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
                 Boolean isValidResultCriminalRecord = (Boolean)context.getMessageHeader("sendResultIsValidCriminalRecord");
-                System.out.println("guardIsValidatedResultCriminalRecord: "+isValidResultCriminalRecord);
+                LOGGER.info("guardIsValidatedResultCriminalRecord: {}",isValidResultCriminalRecord);
                 return isValidResultCriminalRecord;
             }
         };
@@ -460,7 +459,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             @Override
             public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
                 Boolean obtainIsValidQualifications = (Boolean)context.getMessageHeader("obtainIsValidQualification");
-                System.out.println("guardIsValidateResultQualifications: "+obtainIsValidQualifications);
+                LOGGER.info("guardIsValidateResultQualifications: {}",obtainIsValidQualifications);
                 return obtainIsValidQualifications;
             }
         };
@@ -473,7 +472,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             @Override
             public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
                 Boolean obtainIsValidDocument = (Boolean)context.getMessageHeader("isValidDocument");
-                System.out.println("guardIsDocumentResultValidated: "+obtainIsValidDocument);
+                LOGGER.info("guardIsDocumentResultValidated: {}",obtainIsValidDocument);
                 return obtainIsValidDocument;
             }
         };

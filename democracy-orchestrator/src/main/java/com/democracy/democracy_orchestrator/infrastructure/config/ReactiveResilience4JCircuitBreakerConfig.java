@@ -1,6 +1,7 @@
 package com.democracy.democracy_orchestrator.infrastructure.config;
 
 
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTriggerImpl;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -12,9 +13,15 @@ import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigB
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+@Slf4j
 @Configuration
 public class ReactiveResilience4JCircuitBreakerConfig {
+
+    Logger LOGGER = LoggerFactory.getLogger(ReactiveResilience4JCircuitBreakerConfig.class);
 
     @Autowired
     private CircuitBreakerRegistry circuitBreakerRegistry;
@@ -42,7 +49,7 @@ public class ReactiveResilience4JCircuitBreakerConfig {
         TimeLimiterConfig timeLimiterConfig = timeLimiterRegistry.timeLimiter(id)
                 .getTimeLimiterConfig();
         circuitBreaker.getEventPublisher()
-                .onEvent(event -> System.out.println("Circuit-breaker Event Publisher : " + event));
+                .onEvent(event -> LOGGER.info("Circuit-breaker Event Publisher : " + event));
         return new Resilience4JConfigBuilder(id)
                 .circuitBreakerConfig(circuitBreakerConfig)
                 .timeLimiterConfig(timeLimiterConfig)
