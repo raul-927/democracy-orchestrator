@@ -374,11 +374,12 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> sendResultsInvestigationAction() {
         return context ->{
+            investigation.setObservation("Observación de prueba. Se investiga y se obtiene que existen registro de antecedentes delictivos");
             LOGGER.info("Init action sendResultsInvestigationAction...");
             BodyInserter<Investigation, ReactiveHttpOutputMessage> insertInvestigation = BodyInserters.fromValue(investigation);
                 Flux<Investigation> investigationFlux = webClient
                         .post()
-                        .uri("http://localhost:8082/humanresources/investigation/insert")
+                        .uri("http://localhost:8082/electoralcourt/investigation/insert")
                         .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
                         .body(insertInvestigation)
                         .retrieve()
@@ -396,7 +397,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         });
             postulantTrigger.stopPostulationSaga();
             investigationFlux.subscribe(result ->{
-                LOGGER.info("End action sendResultsInvestigationAction... {}",result.getPerson().getPersonId());
+                LOGGER.info("End action sendResultsInvestigationAction... {}",result);
             });
 
         };

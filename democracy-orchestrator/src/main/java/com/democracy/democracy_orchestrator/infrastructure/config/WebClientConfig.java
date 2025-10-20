@@ -12,7 +12,7 @@ public class WebClientConfig {
     @Bean
     public WebClient customWebClient() {
         return WebClient.builder()
-                .baseUrl("http://localhost:8082/humanresources/")
+                .baseUrl("http://localhost:8082")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .defaultCookie("cookieKey", "cookieValue")
                 .build();
