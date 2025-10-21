@@ -17,6 +17,7 @@ public class SendInvestigationUseCase implements SendInvestigationIn {
 
     @Override
     public Flux<Investigation> sendInvestigation(Investigation investigation) {
+
         return investigationOut.sendInvestigation(investigation);
     }
 }
