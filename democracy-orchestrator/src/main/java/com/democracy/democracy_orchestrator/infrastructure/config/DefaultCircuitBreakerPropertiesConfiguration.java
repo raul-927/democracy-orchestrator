@@ -9,8 +9,7 @@ import java.util.Objects;
 public class DefaultCircuitBreakerPropertiesConfiguration implements BeanPostProcessor {
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        if (bean instanceof CircuitBreakerProperties) {
-            CircuitBreakerProperties circuitBreakerProperties = (CircuitBreakerProperties) bean;
+        if (bean instanceof CircuitBreakerProperties circuitBreakerProperties) {
             circuitBreakerProperties.getInstances()
                     .values()
                     .stream()
