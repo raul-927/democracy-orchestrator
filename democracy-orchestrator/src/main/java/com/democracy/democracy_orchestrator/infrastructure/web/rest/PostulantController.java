@@ -27,13 +27,6 @@ public class PostulantController {
     private PostulantTriggerImpl postulantTrigger;
 
 
-   // @GetMapping("/department/select-all")
-    public ResponseEntity<List<Department>> getAllDepartments(){
-        List<Department> departments = this.departmentService.selectAllDepartment();
-
-        return new ResponseEntity<>(departments, null, HttpStatus.OK);
-    }
-
     @PostMapping("/investigation/select")
     public Mono<Integer> getInvestigation(@RequestBody Person person){
         postulantTrigger.initPostulationSaga();

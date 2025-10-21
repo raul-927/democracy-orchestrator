@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface SelectDepartmentIn {
 
-    List<Department> selectAllDepartment();
+    Flux<Department> selectDepartment(Department department);
 }

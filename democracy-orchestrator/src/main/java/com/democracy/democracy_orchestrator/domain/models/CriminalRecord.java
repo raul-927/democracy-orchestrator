@@ -1,7 +1,6 @@
 package com.democracy.democracy_orchestrator.domain.models;
 
 
-
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -16,7 +15,8 @@ import lombok.experimental.Accessors;
 public class CriminalRecord {
     private int 	id;
     private String 	criminalRecordId;
+    private Person  person;
     private String 	criminalRecordName;
     private String 	criminalRecordDescription;
-    private Penal penal;
+    private Penal 	penal;
 }

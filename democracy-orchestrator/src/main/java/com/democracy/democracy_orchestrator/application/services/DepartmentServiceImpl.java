@@ -16,8 +16,9 @@ public class DepartmentServiceImpl implements DepartmentService{
         this.selectDepartmentIn = selectDepartmentIn;
     }
 
+
     @Override
-    public List<Department> selectAllDepartment() {
-        return this.selectDepartmentIn.selectAllDepartment();
+    public Flux<Department> selectDepartment(Department department) {
+        return selectDepartmentIn.selectDepartment(department);
     }
 }

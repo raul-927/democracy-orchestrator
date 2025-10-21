@@ -1,6 +1,6 @@
 package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
-import com.democracy.democracy_orchestrator.application.services.TokenService;
+import com.democracy.democracy_orchestrator.application.services.*;
 import com.democracy.democracy_orchestrator.domain.models.Profession;
 import com.democracy.democracy_orchestrator.domain.models.Investigation;
 import com.democracy.democracy_orchestrator.domain.models.Document;
@@ -31,8 +31,6 @@ import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.transition.Transition;
 import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -50,22 +48,36 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     private PostulantTriggerImpl postulantTrigger;
 
     @Autowired
-    private WebClient webClient;
+    private PersonService personService;
+
+    @Autowired
+    private ProfessionService professionService;
+
+    @Autowired
+    private CriminalRecordService criminalRecordService;
+
+    @Autowired
+    private QualificationService qualificationService;
+
+    @Autowired
+    private DocumentService documentService;
+
+    @Autowired
+    private InvestigationService investigationService;
 
     @Autowired
     private TokenService tokenService;
 
     private Profession profession;
-
     private Document document;
-
+    private Investigation investigation;
 
     private Boolean isValidPerson;
     private Boolean isValidProfession;
     private Boolean isValidCriminalRecord;
     private Boolean isValidQualification;
     private Boolean isValidDocument;
-    private Investigation investigation;
+
 
     @Override
     public void configure(StateMachineStateConfigurer<PostulationStates, PostulationEvents> states)throws Exception{
@@ -221,14 +233,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             Integer cedula = (Integer)context.getMessageHeader("cedula");
             Person person = new Person();
             person.setCedula(cedula);
-            BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
-            Flux<Person> personFlux = webClient.post()
-                    .uri("http://localhost:8082/humanresources/person/select")
-                    .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
-                    .body(selectPerson)
-                    .retrieve()
-                    .bodyToFlux(Person.class);
-
+            Flux<Person> personFlux = personService.selectPerson(person);
             personFlux
                     .doOnComplete(()->{
                         postulantTrigger.sendEvent("SEND_RESULT_VALIDATED_PERSON",Mono.just(
@@ -251,13 +256,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public Action<PostulationStates, PostulationEvents> validateProfessionAction() {
         return context ->{
             LOGGER.info("Init action validateProfessionAction...");
-            BodyInserter<Profession, ReactiveHttpOutputMessage> selectProfession = BodyInserters.fromValue(profession);
-            Flux<Profession> professionFlux = webClient.post()
-                    .uri("http://localhost:8082/humanresources/profession/select")
-                    .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
-                    .body(selectProfession)
-                    .retrieve()
-                    .bodyToFlux(Profession.class);
+            Flux<Profession> professionFlux = professionService.selectProfession(profession);
            professionFlux.
                    doOnError(err->{
                        LOGGER.error("ERROR: {}", err.getMessage());
@@ -280,14 +279,9 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public Action<PostulationStates, PostulationEvents> validateCriminalRecordAction() {
         return context ->{
             LOGGER.info("Init action validateCriminalRecordAction...");
-            Person person = investigation.getPerson();
-            BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
-            Flux<CriminalRecord> criminalRecordFlux = webClient.post()
-                    .uri("http://localhost:8082/humanresources/criminalrecord/select")
-                    .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
-                    .body(selectPerson)
-                    .retrieve()
-                    .bodyToFlux(CriminalRecord.class);
+            CriminalRecord cRecord = new CriminalRecord();
+            cRecord.setPerson(investigation.getPerson());
+            Flux<CriminalRecord> criminalRecordFlux = criminalRecordService.selectCriminalRecord(cRecord);
             List<CriminalRecord> criminalRecordList = new ArrayList<>();
             criminalRecordFlux
                     .doOnComplete(()->{
@@ -308,14 +302,9 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return context ->{
             LOGGER.info("Init action validateQualificationAction...");
             Person person = (Person)context.getMessageHeader("person");
-            BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
-
-            Flux<Qualification> qualificationFlux = webClient.post()
-                    .uri("http://localhost:8082/humanresources/qualification/select")
-                    .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
-                    .body(selectPerson)
-                    .retrieve()
-                    .bodyToFlux(Qualification.class);
+            Qualification qualification = new Qualification();
+            qualification.setPerson(person);
+            Flux<Qualification> qualificationFlux = qualificationService.selectQualification(qualification);
             qualificationFlux.doOnComplete(()->{
                 postulantTrigger.sendEvent("SEND_RESULT_VALIDATE_QUALIFICATIONS",Mono.just(
                         MessageBuilder.withPayload(PostulationEvents.SEND_RESULT_VALIDATE_QUALIFICATIONS)
@@ -338,13 +327,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return context ->{
             LOGGER.info("Init action validateDocumentAction...");
             Document document = (Document)context.getMessageHeader("document");
-            BodyInserter<Document, ReactiveHttpOutputMessage> selectDocument= BodyInserters.fromValue(document);
-            Flux<Document> documentFlux = webClient.post()
-                    .uri("http://localhost:8082/humanresources/document/select")
-                    .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
-                    .body(selectDocument)
-                    .retrieve()
-                    .bodyToFlux(Document.class);
+            Flux<Document> documentFlux = documentService.selectDocument(document);
             documentFlux.doOnComplete(()->{
                 postulantTrigger.sendEvent("SEND_RESULT_VALIDATE_DOCUMENT",Mono.just(
                         MessageBuilder.withPayload(PostulationEvents.SEND_RESULT_VALIDATE_DOCUMENT)
@@ -363,13 +346,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> completedAction() {
         return context ->{
-            /*BodyInserter<Investigation, ReactiveHttpOutputMessage> insertInvestigation = BodyInserters.fromValue(investigation);
-                Flux<Investigation> investigationFlux = webClient
-                        .post()
-                        .uri("http://localhost:8082/humanresources/investigation/insert")
-                        .body(insertInvestigation)
-                        .retrieve()
-                        .bodyToFlux(Investigation.class);*/
             LOGGER.info("Init action completedAction...");
             postulantTrigger.stopPostulationSaga();
             LOGGER.info("End action completeAction.");
@@ -382,24 +358,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             investigation.setObservation("Observación de prueba. Se investiga y se obtiene que existen registro de antecedentes delictivos");
             LOGGER.info("Init action sendResultsInvestigationAction...");
             BodyInserter<Investigation, ReactiveHttpOutputMessage> insertInvestigation = BodyInserters.fromValue(investigation);
-                Flux<Investigation> investigationFlux = webClient
-                        .post()
-                        .uri("http://localhost:8082/electoralcourt/investigation/insert")
-                        .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
-                        .body(insertInvestigation)
-                        .retrieve()
-                        .bodyToFlux(Investigation.class)
-                        .doOnError( err ->{
-                            try{
-                                LOGGER.error("SE PRODUJO UN ERROR... {}", err.getMessage());
-                            }catch (WebClientResponseException erunt){
-                                LOGGER.error("Se captura el error de respuesta....");
-                            } catch (UnsupportedOperationException unsup){
-                                LOGGER.error("Se captura el error de respuesta.... UnsupportedOperationException");
-                            } catch (RuntimeException runtt){
-                                LOGGER.error("Se captura el error de respuesta.... {}", runtt.getMessage());
-                            }
-                        });
+                Flux<Investigation> investigationFlux = investigationService.sendInvestigation(investigation);
             postulantTrigger.stopPostulationSaga();
             investigationFlux.subscribe(result ->{
                 LOGGER.info("End action sendResultsInvestigationAction... {}",result);
