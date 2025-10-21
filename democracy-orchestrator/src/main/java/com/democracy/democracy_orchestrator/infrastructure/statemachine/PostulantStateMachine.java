@@ -1,7 +1,12 @@
 package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
 import com.democracy.democracy_orchestrator.application.services.TokenService;
-import com.democracy.democracy_orchestrator.domain.models.*;
+import com.democracy.democracy_orchestrator.domain.models.Profession;
+import com.democracy.democracy_orchestrator.domain.models.Investigation;
+import com.democracy.democracy_orchestrator.domain.models.Document;
+import com.democracy.democracy_orchestrator.domain.models.Person;
+import com.democracy.democracy_orchestrator.domain.models.Qualification;
+import com.democracy.democracy_orchestrator.domain.models. CriminalRecord;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.PostulationStates;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTriggerImpl;
