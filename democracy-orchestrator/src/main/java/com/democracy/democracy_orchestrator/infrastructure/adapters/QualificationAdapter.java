@@ -1,7 +1,6 @@
 package com.democracy.democracy_orchestrator.infrastructure.adapters;
 
 import com.democracy.democracy_orchestrator.application.services.TokenService;
-import com.democracy.democracy_orchestrator.domain.models.Profession;
 import com.democracy.democracy_orchestrator.domain.models.Qualification;
 import com.democracy.democracy_orchestrator.domain.ports.out.QualificationOut;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +10,10 @@ import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
-
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.LOCAL_HOST_8082;
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.HUMAN_RESOURCES;
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.QUALIFICATION;
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.SELECT;
 @Component
 public class QualificationAdapter implements QualificationOut {
 
@@ -26,7 +28,7 @@ public class QualificationAdapter implements QualificationOut {
     public Flux<Qualification> selectQualification(Qualification qualification) {
         BodyInserter<Qualification, ReactiveHttpOutputMessage> insertQualification = BodyInserters.fromValue(qualification);
         return webClient.post()
-                .uri("http://localhost:8082/humanresources/qualification/select")
+                .uri(LOCAL_HOST_8082 + HUMAN_RESOURCES + QUALIFICATION + SELECT)
                 .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
                 .body(insertQualification)
                 .retrieve()

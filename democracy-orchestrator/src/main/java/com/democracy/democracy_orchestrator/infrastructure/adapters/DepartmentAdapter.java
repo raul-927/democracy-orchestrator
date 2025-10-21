@@ -11,9 +11,13 @@ import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
-
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.LOCAL_HOST_8082;
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.HUMAN_RESOURCES;
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.DEPARTMENT;
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.SELECT;
 @Component
 public class DepartmentAdapter implements DepartmentOut {
+
 
     @Autowired
     private WebClient webClient;
@@ -25,7 +29,7 @@ public class DepartmentAdapter implements DepartmentOut {
     public Flux<Department> selectDepartment(Department department) {
         BodyInserter<Department, ReactiveHttpOutputMessage> selectDepartment = BodyInserters.fromValue(department);
         return webClient.post()
-                .uri("http://localhost:8082/humanresources/department/select")
+                .uri(LOCAL_HOST_8082 + HUMAN_RESOURCES + DEPARTMENT + SELECT)
                 .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
                 .body(selectDepartment)
                 .retrieve()
