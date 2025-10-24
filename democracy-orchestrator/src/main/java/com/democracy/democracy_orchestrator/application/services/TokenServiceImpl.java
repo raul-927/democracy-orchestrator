@@ -3,6 +3,8 @@ package com.democracy.democracy_orchestrator.application.services;
 
 
 import com.democracy.democracy_orchestrator.domain.models.KeyCloakToken;
+import com.democracy.democracy_orchestrator.domain.models.Profession;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.*;
@@ -10,11 +12,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Objects;
 
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.*;
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.SELECT;
+
 @Service
 public class TokenServiceImpl implements TokenService{
+
+    @Autowired
+    private WebClient webClient;
 
     @Value("${keycloak.client-id}")
     private String clientId;
@@ -36,6 +45,28 @@ public class TokenServiceImpl implements TokenService{
 
     @Override
     public String obtainToken(){
+
+        MultiValueMap<String, String> queryParams = new LinkedMultiValueMap<>();
+        queryParams.add("client_id",clientId);
+        queryParams.add("client_secret",clientSecret);
+        queryParams.add("grant_type",granType);
+        queryParams.add("username",userName);
+        queryParams.add("password",password);; // Adding multiple values for the same key
+
+        webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path(url)
+                        .queryParams(queryParams)
+                        .build())
+                .headers((headers) -> headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED))
+                .retrieve()
+                .bodyToFlux(KeyCloakToken.class)
+                .subscribe(tk ->{
+
+                });
+
+
+
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
