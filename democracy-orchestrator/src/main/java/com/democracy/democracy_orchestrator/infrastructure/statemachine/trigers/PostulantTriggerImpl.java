@@ -47,15 +47,4 @@ public class PostulantTriggerImpl implements PostulantTrigger{
         stateMachine.sendEvent(event)
                 .subscribe(result -> LOGGER.info("SEND_EVENT: {} {}",eventDescription+" Trigger: ",result.getResultType()));
     }
-
-
-
-
-
-
-
-
-
-
-
 }
