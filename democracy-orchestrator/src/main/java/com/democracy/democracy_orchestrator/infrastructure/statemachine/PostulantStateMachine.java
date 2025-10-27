@@ -1,6 +1,12 @@
 package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
-import com.democracy.democracy_orchestrator.application.services.*;
+import com.democracy.democracy_orchestrator.application.services.PersonService;
+import com.democracy.democracy_orchestrator.application.services.ProfessionService;
+import com.democracy.democracy_orchestrator.application.services.CriminalRecordService;
+import com.democracy.democracy_orchestrator.application.services.QualificationService;
+import com.democracy.democracy_orchestrator.application.services.InvestigationService;
+import com.democracy.democracy_orchestrator.application.services.TokenService;
+import com.democracy.democracy_orchestrator.application.services.DocumentService;
 import com.democracy.democracy_orchestrator.domain.models.Profession;
 import com.democracy.democracy_orchestrator.domain.models.Investigation;
 import com.democracy.democracy_orchestrator.domain.models.Document;
