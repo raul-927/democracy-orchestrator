@@ -6,6 +6,8 @@ import com.democracy.democracy_orchestrator.domain.ports.out.InvestigationOut;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
+import java.util.UUID;
+
 @Component
 public class SendInvestigationUseCase implements SendInvestigationIn {
 
@@ -17,7 +19,7 @@ public class SendInvestigationUseCase implements SendInvestigationIn {
 
     @Override
     public Flux<Investigation> sendInvestigation(Investigation investigation) {
-
+        investigation.setInvestigationId(UUID.randomUUID().toString());
         return investigationOut.sendInvestigation(investigation);
     }
 }

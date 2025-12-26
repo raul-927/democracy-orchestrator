@@ -1,18 +1,7 @@
 package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
-import com.democracy.democracy_orchestrator.application.services.PersonService;
-import com.democracy.democracy_orchestrator.application.services.ProfessionService;
-import com.democracy.democracy_orchestrator.application.services.CriminalRecordService;
-import com.democracy.democracy_orchestrator.application.services.QualificationService;
-import com.democracy.democracy_orchestrator.application.services.InvestigationService;
-import com.democracy.democracy_orchestrator.application.services.TokenService;
-import com.democracy.democracy_orchestrator.application.services.DocumentService;
-import com.democracy.democracy_orchestrator.domain.models.Profession;
-import com.democracy.democracy_orchestrator.domain.models.Investigation;
-import com.democracy.democracy_orchestrator.domain.models.Document;
-import com.democracy.democracy_orchestrator.domain.models.Person;
-import com.democracy.democracy_orchestrator.domain.models.Qualification;
-import com.democracy.democracy_orchestrator.domain.models. CriminalRecord;
+import com.democracy.democracy_orchestrator.application.services.*;
+import com.democracy.democracy_orchestrator.domain.models.*;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.PostulationStates;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTriggerImpl;
@@ -69,7 +58,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     private DocumentService documentService;
 
     @Autowired
-    private InvestigationService investigationService;
+    private InvestigationResultService investigationResultService;
 
     @Autowired
     private TokenService tokenService;
@@ -210,8 +199,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 .source(PostulationStates.OBTAIN_RESULTS)
                 .target(PostulationStates.ERROR)
                 .event(PostulationEvents.SEND_ERROR)
-                .action(completedAction())
-        ;
+                .action(completedAction());
     }
 
     @Override
@@ -360,16 +348,22 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
 
     @Bean
     public Action<PostulationStates, PostulationEvents> sendResultsInvestigationAction() {
-        return context ->{
+        return context -> {
             investigation.setObservation("Observación de prueba. Se investiga y se obtiene que existen registro de antecedentes delictivos");
+            InvestigationResult investigationResult = new InvestigationResult();
+            investigationResult.setInvestigationId(investigation.getInvestigationId());
+            investigationResult.setCedula(investigation.getPerson().getCedula());
+            investigationResult.setPersonId(investigation.getPerson().getPersonId());
+            investigationResult.setObservation(investigation.getObservation());
+            investigationResult.setIsApprove(investigation.getQualifications().get(0).isApproved());
+            investigationResult.setScore(200);
             LOGGER.info("Init action sendResultsInvestigationAction...");
-            BodyInserter<Investigation, ReactiveHttpOutputMessage> insertInvestigation = BodyInserters.fromValue(investigation);
-                Flux<Investigation> investigationFlux = investigationService.sendInvestigation(investigation);
+            //BodyInserter<InvestigationResult, ReactiveHttpOutputMessage> insertInvestigationResult = BodyInserters.fromValue(investigationResult);
+            Mono<Integer> investigationResultMono = investigationResultService.sendInvestigationResult(investigationResult);
             postulantTrigger.stopPostulationSaga();
-            investigationFlux.subscribe(result ->{
-                LOGGER.info("End action sendResultsInvestigationAction... {}",result);
+            investigationResultMono.subscribe(result -> {
+                LOGGER.info("End action sendResultsInvestigationAction... {}", result);
             });
-
         };
     }
 

@@ -12,6 +12,7 @@ public class UrlConstant {
      public static final String PROFESSION = "/profession";
      public static final String QUALIFICATION = "/qualification";
      public static final String INVESTIGATION = "/investigation";
+     public static final String INVESTIGATION_RESULT ="/investigationresult";
      public static final String INSERT = "/insert";
      public static final String SELECT ="/select";
 
