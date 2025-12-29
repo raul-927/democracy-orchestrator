@@ -32,6 +32,8 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
+
 @Slf4j
 @Configuration
 @EnableStateMachineFactory(name ="postulantStateMachineFactory")
@@ -347,19 +349,19 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     }
 
     @Bean
+    public Action<PostulationStates, PostulationEvents> calculateScoreAction(){
+        return context -> {
+
+        };
+    }
+
+    @Bean
     public Action<PostulationStates, PostulationEvents> sendResultsInvestigationAction() {
         return context -> {
+            investigation.setInvestigationId(UUID.randomUUID().toString());
             investigation.setObservation("Observación de prueba. Se investiga y se obtiene que existen registro de antecedentes delictivos");
-            InvestigationResult investigationResult = new InvestigationResult();
-            investigationResult.setInvestigationId(investigation.getInvestigationId());
-            investigationResult.setCedula(investigation.getPerson().getCedula());
-            investigationResult.setPersonId(investigation.getPerson().getPersonId());
-            investigationResult.setObservation(investigation.getObservation());
-            investigationResult.setIsApprove(investigation.getQualifications().get(0).isApproved());
-            investigationResult.setScore(200);
             LOGGER.info("Init action sendResultsInvestigationAction...");
-            //BodyInserter<InvestigationResult, ReactiveHttpOutputMessage> insertInvestigationResult = BodyInserters.fromValue(investigationResult);
-            Mono<Integer> investigationResultMono = investigationResultService.sendInvestigationResult(investigationResult);
+            Mono<Integer> investigationResultMono = investigationResultService.calculateScore(investigation);
             postulantTrigger.stopPostulationSaga();
             investigationResultMono.subscribe(result -> {
                 LOGGER.info("End action sendResultsInvestigationAction... {}", result);

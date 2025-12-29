@@ -26,9 +26,19 @@ public class InvestigationResultAdapter implements InvestigationResultOut {
     private TokenService tokenService;
 
     @Override
+    public Mono<Integer> calculateScore(InvestigationResult investigationResult) {
+        BodyInserter<InvestigationResult, ReactiveHttpOutputMessage> sendInvestigationResult = BodyInserters.fromValue(investigationResult);
+        return webClient.post()
+                .uri(LOCAL_HOST_8082 + ELECTORAL_COURT + INVESTIGATION_RESULT + INSERT)
+                .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
+                .body(sendInvestigationResult)
+                .retrieve()
+                .bodyToMono(Integer.class);
+    }
+
+    @Override
     public Mono<Integer> sendInvestigationResult(InvestigationResult investigationResult) {
         BodyInserter<InvestigationResult, ReactiveHttpOutputMessage> sendInvestigationResult = BodyInserters.fromValue(investigationResult);
-        System.out.println("LLEGA HASTA ACÁ....");
         return webClient.post()
                 .uri(LOCAL_HOST_8082 + ELECTORAL_COURT + INVESTIGATION_RESULT + INSERT)
                 .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
