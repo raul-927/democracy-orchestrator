@@ -30,7 +30,7 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         investigationResult.setIsApprove(investigation.getQualifications().get(0).isApproved());
         List<CriminalRecord> criminalRecords = investigation.getCriminalRecords();
         List<Qualification> qualifications = investigation.getQualifications();
-
+        score = 0;
         qualifications.forEach( q ->{
             if(q.isApproved()){
                 score ++;

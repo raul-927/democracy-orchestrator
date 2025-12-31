@@ -227,9 +227,10 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return context ->{
             LOGGER.info("Init action validatePersonAction...");
             Integer cedula = (Integer)context.getMessageHeader("cedula");
+            System.out.println("CEDULA: "+cedula);
             Person person = new Person();
             person.setCedula(cedula);
-            Flux<Person> personFlux = personService.selectPerson(person);
+            Flux<Person> personFlux = personService.selectPerson(person).filter(f -> f.getCedula() == cedula);
             personFlux
                     .doOnComplete(()->{
                         postulantTrigger.sendEvent("SEND_RESULT_VALIDATED_PERSON",Mono.just(
@@ -240,6 +241,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
 
                     })
                     .subscribe(result->{
+                        System.out.println("CEDULA-FLUX. "+result.getCedula());
                         profession = result.getProfession();
                         isValidPerson= result.getPersonId() != null;
                         investigation = new Investigation();

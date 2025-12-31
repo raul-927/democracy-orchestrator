@@ -29,6 +29,7 @@ public class PostulantController {
 
     @PostMapping("/investigation/select")
     public Mono<Integer> getInvestigation(@RequestBody Person person){
+        System.out.println("PERSON_CEDULA: "+person.getCedula());
         postulantTrigger.initPostulationSaga();
         postulantTrigger.sendEvent("VALIDATE_PERSON", Mono.just(
                 MessageBuilder.withPayload(PostulationEvents.VALIDATE_PERSON)
