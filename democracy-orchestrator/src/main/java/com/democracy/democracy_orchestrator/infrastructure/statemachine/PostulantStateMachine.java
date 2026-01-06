@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.ReactiveHttpOutputMessage;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
@@ -21,11 +20,10 @@ import org.springframework.statemachine.config.builders.StateMachineConfiguratio
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.guard.Guard;
+import org.springframework.statemachine.guard.ReactiveGuard;
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.transition.Transition;
-import org.springframework.web.reactive.function.BodyInserter;
-import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -227,7 +225,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return context ->{
             LOGGER.info("Init action validatePersonAction...");
             Integer cedula = (Integer)context.getMessageHeader("cedula");
-            System.out.println("CEDULA: "+cedula);
             Person person = new Person();
             person.setCedula(cedula);
             Flux<Person> personFlux = personService.selectPerson(person);
@@ -241,7 +238,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
 
                     })
                     .subscribe(result->{
-                        System.out.println("CEDULA-FLUX. "+result.getCedula());
                         profession = result.getProfession();
                         isValidPerson= result.getPersonId() != null;
                         investigation = new Investigation();

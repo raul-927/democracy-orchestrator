@@ -9,8 +9,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.statemachine.StateMachine;
+import org.springframework.statemachine.StateMachineEventResult;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.stereotype.Component;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 @Slf4j
 @Component
@@ -42,9 +45,14 @@ public class PostulantTriggerImpl implements PostulantTrigger{
     }
 
     @Override
-    public void sendEvent(String eventDescription, Mono<Message<PostulationEvents>> event) {
+    public Flux<StateMachineEventResult<PostulationStates, PostulationEvents>> sendEvent(String eventDescription, Mono<Message<PostulationEvents>> event) {
         LOGGER.info("Initialize sendEvent: {}",eventDescription+"...");
-        stateMachine.sendEvent(event)
-                .subscribe(result -> LOGGER.info("SEND_EVENT: {} {}",eventDescription+" Trigger: ",result.getResultType()));
+       stateMachine.sendEvent(event)
+                .subscribe(
+                        result -> {
+                            LOGGER.info("SEND_EVENT: {} {}",eventDescription+" Trigger: ",result.getResultType());
+
+                        });
+        return stateMachine.sendEvent(event);
     }
 }

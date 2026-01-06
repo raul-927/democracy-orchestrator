@@ -36,15 +36,12 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
                 score ++;
             }
         });
-        System.out.println("SCORE++: "+score);
         criminalRecords.forEach(cr ->{
             if(cr.getCriminalRecordId()!=null){
                 score--;
             }
         });
-        System.out.println("SCORE--: "+score);
         investigationResult.setScore(score);
-        System.out.println("SCORE: "+score);
         return investigationResultOut.calculateScore(investigationResult);
     }
 }
