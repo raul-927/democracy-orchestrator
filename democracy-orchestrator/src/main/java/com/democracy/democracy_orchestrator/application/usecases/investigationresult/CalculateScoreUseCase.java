@@ -4,7 +4,6 @@ import com.democracy.democracy_orchestrator.domain.models.*;
 import com.democracy.democracy_orchestrator.domain.ports.in.investigationresult.CalculateScoreIn;
 import com.democracy.democracy_orchestrator.domain.ports.out.InvestigationResultOut;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;

@@ -50,5 +50,4 @@ public class InvestigationResultAdapter implements InvestigationResultOut {
                 .retrieve()
                 .bodyToMono(Integer.class);
     }
-
 }
