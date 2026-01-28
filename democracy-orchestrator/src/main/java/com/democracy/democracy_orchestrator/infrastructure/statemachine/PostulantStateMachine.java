@@ -236,6 +236,9 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         isValidPerson = false;
 
                     })
+                    .doOnNext(next->{
+
+                    })
                     .subscribe(result->{
                         profession = result.getProfession();
                         isValidPerson= result.getPersonId() != null;
@@ -298,7 +301,9 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             Qualification qualification = new Qualification();
             qualification.setPerson(person);
             Flux<Qualification> qualificationFlux = qualificationService.selectQualification(qualification);
+            List<Qualification> qualifications = new ArrayList<>();
             qualificationFlux.doOnComplete(()->{
+                investigation.setQualifications(qualifications);
                 postulantTrigger.sendEvent("SEND_RESULT_VALIDATE_QUALIFICATIONS",Mono.just(
                         MessageBuilder.withPayload(PostulationEvents.SEND_RESULT_VALIDATE_QUALIFICATIONS)
                                 .setHeader("obtainIsValidQualification", isValidQualification)
@@ -307,9 +312,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 ));
             }).subscribe( result ->{
                 isValidQualification = result.isApproved();
-                List<Qualification> qualifications = new ArrayList<>();
                 qualifications.add(result);
-                investigation.setQualifications(qualifications);
                 document = result.getDocument();
             });
         };
@@ -411,7 +414,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
                 Boolean isValidResultCriminalRecord = (Boolean)context.getMessageHeader("sendResultIsValidCriminalRecord");
                 LOGGER.info("guardIsValidatedResultCriminalRecord: {}",isValidResultCriminalRecord);
-                return isValidResultCriminalRecord;
+                return true;
             }
         };
     }

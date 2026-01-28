@@ -13,4 +13,5 @@ public interface PostulantTrigger {
     void initPostulationSaga();
     void stopPostulationSaga();
     Flux<StateMachineEventResult<PostulationStates, PostulationEvents>> sendEvent(String eventDescription, Mono<Message<PostulationEvents>> event);
+    Mono<InvestigationResult> sendFinalEventInvestigationResult(String eventDescription,  InvestigationResult investigationResult, Mono<Message<PostulationEvents>> event);
 }

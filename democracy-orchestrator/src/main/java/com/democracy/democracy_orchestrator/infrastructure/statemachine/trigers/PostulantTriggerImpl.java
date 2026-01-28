@@ -1,6 +1,7 @@
 package com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers;
 
 import com.democracy.democracy_orchestrator.application.services.InvestigationService;
+import com.democracy.democracy_orchestrator.domain.models.InvestigationResult;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.PostulationStates;
 import lombok.extern.slf4j.Slf4j;
@@ -53,5 +54,16 @@ public class PostulantTriggerImpl implements PostulantTrigger{
 
                         });
         return stateMachine.sendEvent(event);
+    }
+
+    @Override
+    public Mono<InvestigationResult> sendFinalEventInvestigationResult(String eventDescription, InvestigationResult investigationResult, Mono<Message<PostulationEvents>> event) {
+        stateMachine.sendEvent(event)
+                .subscribe(
+                        result -> {
+                            LOGGER.info("SEND_EVENT: {} {}",eventDescription+" Trigger: ",result.getResultType());
+
+                        });
+        return Mono.just(investigationResult);
     }
 }
