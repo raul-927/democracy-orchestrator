@@ -26,7 +26,7 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         investigationResult.setInvestigationId(investigation.getInvestigationId());
         investigationResult.setCedula(investigation.getPerson().getCedula());
         investigationResult.setObservation(investigation.getObservation());
-        investigationResult.setIsApprove(investigation.getQualifications().get(0).isApproved());
+        investigationResult.setIsApprove(true);
         List<CriminalRecord> criminalRecords = investigation.getCriminalRecords();
         List<Qualification> qualifications = investigation.getQualifications();
         score = 0;
@@ -38,6 +38,7 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         criminalRecords.forEach(cr ->{
             if(cr.getCriminalRecordId()!=null){
                 score--;
+                investigationResult.setIsApprove(false);
             }
         });
         investigationResult.setScore(score);

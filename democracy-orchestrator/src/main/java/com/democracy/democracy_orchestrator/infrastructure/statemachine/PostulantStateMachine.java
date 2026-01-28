@@ -358,8 +358,21 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     @Bean
     public Action<PostulationStates, PostulationEvents> sendResultsInvestigationAction() {
         return context -> {
+            String observation1 = "";
             investigation.setInvestigationId(UUID.randomUUID().toString());
-            investigation.setObservation("Observación de prueba. Se investiga y se obtiene que existen registro de antecedentes delictivos");
+            if(investigation.getCriminalRecords().isEmpty()){
+                observation1 = "Se observa que no contiene registros de antecedentes delictivos";
+            }
+            else{
+                observation1 = "Se investiga y se obtiene que existen registro de antecedentes delictivos";
+            }
+            if(investigation.getQualifications().isEmpty()){
+                observation1 = observation1.concat(" / Se verifica que no contiene Calificaciones en sus diplomas");
+            }
+            else{
+                observation1 = observation1.concat(" / Se verifica y se aprueban las calificaciones de sus diplomas");
+            }
+            investigation.setObservation(observation1);
             LOGGER.info("Init action sendResultsInvestigationAction...");
             Mono<Integer> investigationResultMono = investigationResultService.calculateScore(investigation);
             postulantTrigger.stopPostulationSaga();
