@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 //import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 
 
-@Configuration
+//@Configuration
 public class DepartmentRouter {
     private static final String HUMAN_RESOURCES = RoutesConstant.HUMAN_RESOURCES;
     private static final String DEPARTMENT_PATH = RoutesConstant.DEPARTMENT;

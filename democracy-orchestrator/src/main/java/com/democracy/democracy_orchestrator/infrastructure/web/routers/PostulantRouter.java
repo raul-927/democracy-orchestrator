@@ -9,17 +9,16 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import static com.democracy.democracy_orchestrator.infrastructure.web.constants.RoutesConstant.*;
-import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
 
-
+//@Configuration
 public class PostulantRouter {
-
-
-
-    public RouterFunction<ServerResponse> routerDepartment(PostulantHandler handler){
+    //@Bean
+    public RouterFunction<ServerResponse> routerPostulant(PostulantHandler handler){
+        String returnUrl = DEMOCRACY_ORCHESTRATOR.concat(INVESTIGATION).concat(SELECT);
+        System.out.println("URL: "+returnUrl);
         return RouterFunctions
            .route(
-                   POST(DEMOCRACY_ORCHESTRATOR + INVESTIGATION + SELECT), handler::selectPostulant);
+                   POST(returnUrl), handler::selectPostulant);
     }
 }

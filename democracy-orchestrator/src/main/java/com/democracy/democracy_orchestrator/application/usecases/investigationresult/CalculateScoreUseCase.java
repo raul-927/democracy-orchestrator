@@ -36,7 +36,8 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
             }
         });
         criminalRecords.forEach(cr ->{
-            if(cr.getCriminalRecordId()!=null){
+            if(!cr.getCriminalRecordId().isEmpty()){
+                System.out.println("ENTRO POR ACA...");
                 score--;
                 investigationResult.setIsApprove(false);
             }
