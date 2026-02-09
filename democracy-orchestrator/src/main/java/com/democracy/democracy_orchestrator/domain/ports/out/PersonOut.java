@@ -6,4 +6,5 @@ import reactor.core.publisher.Mono;
 
 public interface PersonOut {
     Flux<Person> selectPerson(Person person);
+    Mono<Integer> updatePerson(Person person);
 }

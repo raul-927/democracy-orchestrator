@@ -15,5 +15,6 @@ public class UrlConstant {
      public static final String INVESTIGATION_RESULT ="/investigationresult";
      public static final String INSERT = "/insert";
      public static final String SELECT ="/select";
+     public static final String UPDATE = "/update";
 
 }

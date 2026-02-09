@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
@@ -26,6 +27,7 @@ import org.springframework.statemachine.transition.Transition;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -223,10 +225,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public Action<PostulationStates, PostulationEvents> validatePersonAction(){
         return context ->{
             LOGGER.info("Init action validatePersonAction...");
-            Integer cedula = (Integer)context.getMessageHeader("cedula");
-            System.out.println("LLEGA CEDULA: "+cedula);
             Person person = new Person();
-            person.setCedula(cedula);
+            person.setIsProcessed(false);
             Flux<Person> personFlux = personService.selectPerson(person);
             personFlux
                     .doOnComplete(()->{
@@ -238,8 +238,9 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
 
                     })
                     .doOnNext(next->{
-
+                        System.out.println("NEXT: "+next);
                     })
+
                     .subscribe(result->{
                         profession = result.getProfession();
                         isValidPerson= result.getPersonId() != null;
@@ -376,10 +377,20 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             investigation.setObservation(observation1);
             LOGGER.info("Init action sendResultsInvestigationAction...");
             Mono<Integer> investigationResultMono = investigationResultService.calculateScore(investigation);
+            Person updatePerson = new Person();
+            updatePerson.setCedula(investigation.getPerson().getCedula());
+            updatePerson.setIsProcessed(true);
+            Mono<Integer> personResult = personService.updatePerson(updatePerson);
             postulantTrigger.stopPostulationSaga();
             investigationResultMono.subscribe(result -> {
                 LOGGER.info("End action sendResultsInvestigationAction... {}", result);
             });
+            personResult
+                    .subscribe(per ->{
+                        System.out.println("PERSON: RESULT"+per);
+                    }
+
+            );
         };
     }
 

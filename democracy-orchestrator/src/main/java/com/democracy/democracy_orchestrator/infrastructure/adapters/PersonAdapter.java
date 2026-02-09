@@ -10,10 +10,10 @@ import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
-import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.LOCAL_HOST_8082;
-import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.HUMAN_RESOURCES;
-import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.PERSON;
-import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.SELECT;
+import reactor.core.publisher.Mono;
+
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.*;
+
 @Component
 public class PersonAdapter implements PersonOut {
 
@@ -32,5 +32,16 @@ public class PersonAdapter implements PersonOut {
                 .body(selectPerson)
                 .retrieve()
                 .bodyToFlux(Person.class);
+    }
+
+    @Override
+    public Mono<Integer> updatePerson(Person person) {
+        BodyInserter<Person, ReactiveHttpOutputMessage> selectPerson = BodyInserters.fromValue(person);
+        return webClient.put()
+                .uri(LOCAL_HOST_8082 + HUMAN_RESOURCES + PERSON + UPDATE)
+                .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
+                .body(selectPerson)
+                .retrieve()
+                .bodyToMono(Integer.class);
     }
 }
