@@ -74,7 +74,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     private Boolean isValidQualification;
     private Boolean isValidDocument;
 
-
     @Override
     public void configure(StateMachineStateConfigurer<PostulationStates, PostulationEvents> states)throws Exception{
         states
@@ -95,15 +94,12 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public void configure(StateMachineTransitionConfigurer<PostulationStates, PostulationEvents> transitions)throws Exception{
         transitions
                 .withExternal()
-                    .source(PostulationStates.NEW)
-                        .target(PostulationStates.PERSON_VALIDATED)
-                            .event(PostulationEvents.VALIDATE_PERSON)
-                                .action(validatePersonAction())
+                    .source(PostulationStates.NEW).target(PostulationStates.PERSON_VALIDATED)
+                            .event(PostulationEvents.VALIDATE_PERSON).action(validatePersonAction())
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.PERSON_VALIDATED)
-                        .target(PostulationStates.IS_VALIDATED_PERSON)
+                    .source(PostulationStates.PERSON_VALIDATED).target(PostulationStates.IS_VALIDATED_PERSON)
                             .event(PostulationEvents.SEND_RESULT_VALIDATED_PERSON)
 
                 .and()
@@ -237,10 +233,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                         isValidPerson = false;
 
                     })
-                    .doOnNext(next->{
-                        System.out.println("NEXT: "+next);
-                    })
-
                     .subscribe(result->{
                         profession = result.getProfession();
                         isValidPerson= result.getPersonId() != null;
@@ -387,7 +379,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             });
             personResult
                     .subscribe(per ->{
-                        System.out.println("PERSON: RESULT"+per);
+                        System.out.println("PERSON: RESULT: "+per);
                     }
 
             );
