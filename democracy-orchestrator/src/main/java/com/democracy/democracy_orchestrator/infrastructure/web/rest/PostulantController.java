@@ -21,6 +21,7 @@ public class PostulantController {
 
     @PostMapping("/investigation/select")
     public Flux<StateMachineEventResult<PostulationStates, PostulationEvents>> getInvestigation(@RequestBody Person person){
+        System.out.println("CEDULA: "+person.getCedula());
         postulantTrigger.initPostulationSaga();
         Flux<StateMachineEventResult<PostulationStates, PostulationEvents>> aux = postulantTrigger.sendEvent("VALIDATE_PERSON", Mono.just(
                 MessageBuilder.withPayload(PostulationEvents.VALIDATE_PERSON)

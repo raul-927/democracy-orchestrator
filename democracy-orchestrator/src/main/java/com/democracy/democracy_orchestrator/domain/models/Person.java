@@ -24,4 +24,5 @@ public class Person {
     private String 	   			secondLastName;
     private Address    			address;
     private Profession 			profession;
+    private Boolean             isProcessed;
 }

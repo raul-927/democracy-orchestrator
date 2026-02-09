@@ -224,6 +224,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return context ->{
             LOGGER.info("Init action validatePersonAction...");
             Integer cedula = (Integer)context.getMessageHeader("cedula");
+            System.out.println("LLEGA CEDULA: "+cedula);
             Person person = new Person();
             person.setCedula(cedula);
             Flux<Person> personFlux = personService.selectPerson(person);
