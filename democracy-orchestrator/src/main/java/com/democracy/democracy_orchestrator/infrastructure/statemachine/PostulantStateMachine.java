@@ -219,8 +219,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             Person person = new Person();
             Integer cedula = (Integer) context.getMessageHeader("cedula");
             person.setCedula(cedula);
-            Flux<Person> personFlux = personService.selectPerson(person);
-            personFlux
+            personService.selectPerson(person)
                     .doOnComplete(()->{
                         postulantTrigger.sendEvent("SEND_RESULT_VALIDATED_PERSON",Mono.just(
                                 MessageBuilder.withPayload(PostulationEvents.SEND_RESULT_VALIDATED_PERSON)
@@ -242,8 +241,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public Action<PostulationStates, PostulationEvents> validateProfessionAction() {
         return context ->{
             LOGGER.info("Init action validateProfessionAction...");
-            Flux<Profession> professionFlux = professionService.selectProfession(profession);
-           professionFlux.
+            professionService.selectProfession(profession).
                    doOnError(err->{
                        LOGGER.error("ERROR: {}", err.getMessage());
                    }).
@@ -267,9 +265,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             LOGGER.info("Init action validateCriminalRecordAction...");
             CriminalRecord cRecord = new CriminalRecord();
             cRecord.setPerson(investigation.getPerson());
-            Flux<CriminalRecord> criminalRecordFlux = criminalRecordService.selectCriminalRecord(cRecord).filter(cr->cr.getPerson().getCedula()== cRecord.getPerson().getCedula());
             List<CriminalRecord> criminalRecordList = new ArrayList<>();
-            criminalRecordFlux
+            criminalRecordService.selectCriminalRecord(cRecord)
                     .doOnComplete(()->{
                         investigation.setCriminalRecords(criminalRecordList);
                         isValidCriminalRecord = !criminalRecordList.isEmpty();
@@ -290,9 +287,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             Person person = (Person)context.getMessageHeader("person");
             Qualification qualification = new Qualification();
             qualification.setPerson(person);
-            Flux<Qualification> qualificationFlux = qualificationService.selectQualification(qualification);
             List<Qualification> qualifications = new ArrayList<>();
-            qualificationFlux.doOnComplete(()->{
+            qualificationService.selectQualification(qualification).doOnComplete(()->{
                 investigation.setQualifications(qualifications);
                 postulantTrigger.sendEvent("SEND_RESULT_VALIDATE_QUALIFICATIONS",Mono.just(
                         MessageBuilder.withPayload(PostulationEvents.SEND_RESULT_VALIDATE_QUALIFICATIONS)
@@ -313,8 +309,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return context ->{
             LOGGER.info("Init action validateDocumentAction...");
             Document document = (Document)context.getMessageHeader("document");
-            Flux<Document> documentFlux = documentService.selectDocument(document);
-            documentFlux.doOnComplete(()->{
+            documentService.selectDocument(document).doOnComplete(()->{
                 postulantTrigger.sendEvent("SEND_RESULT_VALIDATE_DOCUMENT",Mono.just(
                         MessageBuilder.withPayload(PostulationEvents.SEND_RESULT_VALIDATE_DOCUMENT)
                                 .setHeader("isValidDocument",isValidDocument)
@@ -350,27 +345,14 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return context -> {
             String observation1 = "";
             investigation.setInvestigationId(UUID.randomUUID().toString());
-            if(investigation.getCriminalRecords().isEmpty()){
-                observation1 = "Se observa que no contiene registros de antecedentes delictivos";
-            }
-            else{
-                observation1 = "Se investiga y se obtiene que existen registro de antecedentes delictivos";
-            }
-            if(investigation.getQualifications().isEmpty()){
-                observation1 = observation1.concat(" / Se verifica que no contiene Calificaciones en sus diplomas");
-            }
-            else{
-                observation1 = observation1.concat(" / Se verifica y se aprueban las calificaciones de sus diplomas");
-            }
-            investigation.setObservation(observation1);
+
             LOGGER.info("Init action sendResultsInvestigationAction...");
-            Mono<Integer> investigationResultMono = investigationResultService.calculateScore(investigation);
             Person updatePerson = new Person();
             updatePerson.setCedula(investigation.getPerson().getCedula());
             updatePerson.setIsProcessed(true);
             Mono<Integer> personResult = personService.updatePerson(updatePerson);
             postulantTrigger.stopPostulationSaga();
-            investigationResultMono
+            investigationResultService.calculateScore(investigation)
                     .subscribe(result -> {
                 LOGGER.info("End action sendResultsInvestigationAction... {}", result);
             });

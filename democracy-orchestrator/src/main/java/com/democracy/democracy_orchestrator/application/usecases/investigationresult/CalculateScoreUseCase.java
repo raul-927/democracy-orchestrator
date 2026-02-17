@@ -27,22 +27,38 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         investigationResult.setPersonId(investigation.getPerson().getPersonId());
         investigationResult.setInvestigationId(investigation.getInvestigationId());
         investigationResult.setCedula(investigation.getPerson().getCedula());
-        investigationResult.setObservation(investigation.getObservation());
         investigationResult.setIsApprove(true);
-        List<CriminalRecord> criminalRecords = investigation.getCriminalRecords();
-        List<Qualification> qualifications = investigation.getQualifications();
+        String observation = "";
+        if(investigation.getCriminalRecords().isEmpty()){
+            observation = "Se observa que no contiene registros de antecedentes delictivos";
+        }
+        else{
+            observation = "Se investiga y se obtiene que existen registro de antecedentes delictivos";
+        }
+        if(investigation.getQualifications().isEmpty()){
+            observation = observation.concat(" / Se verifica que no contiene Calificaciones en sus diplomas");
+        }
+        else{
+            observation = observation.concat(" / Se verifica y se aprueban las calificaciones de sus diplomas");
+        }
+
         score = 0;
-        qualifications.forEach( q ->{
+        investigation.getQualifications().forEach( q ->{
             if(q.isApproved()){
                 score ++;
             }
         });
-        criminalRecords.forEach(cr ->{
+        investigation.getCriminalRecords().forEach(cr ->{
             if(!cr.getCriminalRecordId().isEmpty()){
                 score--;
                 investigationResult.setIsApprove(false);
             }
         });
+        if(score <=0){
+            investigationResult.setIsApprove(false);
+            observation = observation.concat("/ El puntaje no supera el límite mínimo necesario");
+        }
+        investigationResult.setObservation(observation);
         investigationResult.setScore(score);
         return investigationResultOut.calculateScore(investigationResult);
     }
