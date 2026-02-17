@@ -23,13 +23,15 @@ import org.springframework.statemachine.guard.Guard;
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.transition.Transition;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
+
+import static com.democracy.democracy_orchestrator.infrastructure.statemachine.events.postulation.PostulationEvents.*;
+import static com.democracy.democracy_orchestrator.infrastructure.statemachine.states.postulation.PostulationStates.*;
 
 @Slf4j
 @Configuration
@@ -73,15 +75,15 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public void configure(StateMachineStateConfigurer<PostulationStates, PostulationEvents> states)throws Exception{
         states
                 .withStates()
-                .initial(PostulationStates.NEW)
-                .choice(PostulationStates.IS_VALIDATED_PERSON)
-                .choice(PostulationStates.IS_VALIDATE_PROFESSION)
-                .choice(PostulationStates.IS_VALIDATED_RESULT_CRIMINAL_RECORD)
-                .choice(PostulationStates.IS_VALIDATE_RESULT_QUALIFICATIONS)
-                .choice(PostulationStates.IS_VALIDATED_DOCUMENTS)
-                .end(PostulationStates.COMPLETED)
-                .end(PostulationStates.CANCELLED)
-                .end(PostulationStates.ERROR)
+                .initial(NEW)
+                .choice(IS_VALIDATED_PERSON)
+                .choice(IS_VALIDATE_PROFESSION)
+                .choice(IS_VALIDATED_RESULT_CRIMINAL_RECORD)
+                .choice(IS_VALIDATE_RESULT_QUALIFICATIONS)
+                .choice(IS_VALIDATED_DOCUMENTS)
+                .end(COMPLETED)
+                .end(CANCELLED)
+                .end(ERROR)
                 .states(EnumSet.allOf(PostulationStates.class));
     }
 
@@ -89,109 +91,99 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public void configure(StateMachineTransitionConfigurer<PostulationStates, PostulationEvents> transitions)throws Exception{
         transitions
                 .withExternal()
-                    .source(PostulationStates.NEW).target(PostulationStates.PERSON_VALIDATED)
-                            .event(PostulationEvents.VALIDATE_PERSON).action(validatePersonAction())
+                    .source(NEW).target(PERSON_VALIDATED)
+                    .event(VALIDATE_PERSON)
+                    .action(validatePersonAction())
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.PERSON_VALIDATED).target(PostulationStates.IS_VALIDATED_PERSON)
-                            .event(PostulationEvents.SEND_RESULT_VALIDATED_PERSON)
+                    .source(PERSON_VALIDATED).target(IS_VALIDATED_PERSON)
+                    .event(SEND_RESULT_VALIDATED_PERSON)
 
                 .and()
                 .withChoice()
-                    .source(PostulationStates.IS_VALIDATED_PERSON)
-                    .first(PostulationStates.PROFESSION_VALIDATED, guardIsValidPerson())
-                    .last(PostulationStates.NOT_VALID)
+                    .source(IS_VALIDATED_PERSON)
+                    .first(PROFESSION_VALIDATED, guardIsValidPerson())
+                    .last(NOT_VALID)
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.PROFESSION_VALIDATED)
-                        .target(PostulationStates.RESULT_PROFESSION_VALIDATED)
-                                .action(validateProfessionAction())
+                    .source(PROFESSION_VALIDATED).target(RESULT_PROFESSION_VALIDATED)
+                    .action(validateProfessionAction())
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.RESULT_PROFESSION_VALIDATED)
-                        .target(PostulationStates.IS_VALIDATE_PROFESSION)
-                            .event(PostulationEvents.VALIDATE_PROFESSION)
+                    .source(RESULT_PROFESSION_VALIDATED).target(IS_VALIDATE_PROFESSION)
+                    .event(VALIDATE_PROFESSION)
 
                 .and()
                 .withChoice()
-                    .source(PostulationStates.IS_VALIDATE_PROFESSION)
-                    .first(PostulationStates.CRIMINAL_RECORDS_VALIDATED, guardIsValidProfession())
-                    .last(PostulationStates.NOT_VALID)
+                    .source(IS_VALIDATE_PROFESSION)
+                    .first(CRIMINAL_RECORDS_VALIDATED, guardIsValidProfession())
+                    .last(NOT_VALID)
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.CRIMINAL_RECORDS_VALIDATED)
-                        .target(PostulationStates.RESULT_CRIMINAL_RECORDS_VALIDATED)
-                                .action(validateCriminalRecordAction())
+                    .source(CRIMINAL_RECORDS_VALIDATED).target(RESULT_CRIMINAL_RECORDS_VALIDATED)
+                    .action(validateCriminalRecordAction())
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.RESULT_CRIMINAL_RECORDS_VALIDATED)
-                        .target(PostulationStates.IS_VALIDATED_RESULT_CRIMINAL_RECORD)
-                            .event(PostulationEvents.SEND_RESULT_CRIMINAL_RECORD_VALIDATED)
+                    .source(RESULT_CRIMINAL_RECORDS_VALIDATED).target(IS_VALIDATED_RESULT_CRIMINAL_RECORD)
+                    .event(SEND_RESULT_CRIMINAL_RECORD_VALIDATED)
 
                 .and()
                 .withChoice()
-                    .source(PostulationStates.IS_VALIDATED_RESULT_CRIMINAL_RECORD)
-                    .first(PostulationStates.QUALIFICATION_VALIDATED, guardIsValidatedResultCriminalRecord())
-                    .last(PostulationStates.NOT_VALID)
+                    .source(IS_VALIDATED_RESULT_CRIMINAL_RECORD)
+                    .first(QUALIFICATION_VALIDATED, guardIsValidatedResultCriminalRecord())
+                    .last(NOT_VALID)
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.QUALIFICATION_VALIDATED)
-                        .target(PostulationStates.RESULT_VALIDATE_QUALIFICATIONS)
-                                .action(validateQualificationAction())
+                    .source(QUALIFICATION_VALIDATED).target(RESULT_VALIDATE_QUALIFICATIONS)
+                    .action(validateQualificationAction())
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.RESULT_VALIDATE_QUALIFICATIONS)
-                        .target(PostulationStates.IS_VALIDATE_RESULT_QUALIFICATIONS)
-                            .event(PostulationEvents.SEND_RESULT_VALIDATE_QUALIFICATIONS)
+                    .source(RESULT_VALIDATE_QUALIFICATIONS).target(IS_VALIDATE_RESULT_QUALIFICATIONS)
+                    .event(SEND_RESULT_VALIDATE_QUALIFICATIONS)
 
                 .and()
                 .withChoice()
-                    .source(PostulationStates.IS_VALIDATE_RESULT_QUALIFICATIONS)
-                    .first(PostulationStates.VALIDATE_DOCUMENT, guardIsValidateResultQualifications())
-                    .last(PostulationStates.NOT_VALID)
+                    .source(IS_VALIDATE_RESULT_QUALIFICATIONS)
+                    .first(VALIDATE_DOCUMENT, guardIsValidateResultQualifications())
+                    .last(NOT_VALID)
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.VALIDATE_DOCUMENT)
-                        .target(PostulationStates.RESULT_VALIDATE_DOCUMENT)
-                                .action(validateDocumentAction())
+                    .source(VALIDATE_DOCUMENT).target(RESULT_VALIDATE_DOCUMENT)
+                    .action(validateDocumentAction())
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.RESULT_VALIDATE_DOCUMENT)
-                        .target(PostulationStates.IS_VALIDATED_DOCUMENTS)
-                            .event(PostulationEvents.SEND_RESULT_VALIDATE_DOCUMENT)
+                    .source(RESULT_VALIDATE_DOCUMENT).target(IS_VALIDATED_DOCUMENTS)
+                    .event(SEND_RESULT_VALIDATE_DOCUMENT)
 
                 .and()
                 .withChoice()
-                    .source(PostulationStates.IS_VALIDATED_DOCUMENTS)
-                    .first(PostulationStates.OBTAIN_RESULTS, guardIsDocumentResultValidated())
-                    .last(PostulationStates.NOT_VALID)
+                    .source(IS_VALIDATED_DOCUMENTS)
+                    .first(OBTAIN_RESULTS, guardIsDocumentResultValidated())
+                    .last(NOT_VALID)
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.OBTAIN_RESULTS)
-                        .target(PostulationStates.COMPLETED)
-                            .action(sendResultsInvestigationAction())
+                    .source(OBTAIN_RESULTS).target(COMPLETED)
+                    .action(sendResultsInvestigationAction())
 
                 .and()
                 .withExternal()
-                    .source(PostulationStates.NOT_VALID)
-                        .target(PostulationStates.COMPLETED)
-                            .action(completedAction())
+                    .source(NOT_VALID).target(COMPLETED)
+                    .action(completedAction())
                 .and()
                 .withExternal()
-                .source(PostulationStates.OBTAIN_RESULTS)
-                .target(PostulationStates.ERROR)
-                .event(PostulationEvents.SEND_ERROR)
-                .action(completedAction());
+                    .source(OBTAIN_RESULTS).target(ERROR)
+                    .event(SEND_ERROR)
+                    .action(completedAction());
     }
 
     @Override
@@ -222,7 +214,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             personService.selectPerson(person)
                     .doOnComplete(()->{
                         postulantTrigger.sendEvent("SEND_RESULT_VALIDATED_PERSON",Mono.just(
-                                MessageBuilder.withPayload(PostulationEvents.SEND_RESULT_VALIDATED_PERSON)
+                                MessageBuilder.withPayload(SEND_RESULT_VALIDATED_PERSON)
                                         .setHeader("isValidPerson",isValidPerson)
                                         .build()));
                         isValidPerson = false;
@@ -248,7 +240,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             doOnComplete(()->{
                 postulantTrigger.sendEvent("VALIDATE_PROFESSION ",Mono.just(
                         MessageBuilder
-                                .withPayload(PostulationEvents.VALIDATE_PROFESSION)
+                                .withPayload(VALIDATE_PROFESSION)
                                 .setHeader("sendIsValidProfession",isValidProfession)
                                 .build()
                 ));
