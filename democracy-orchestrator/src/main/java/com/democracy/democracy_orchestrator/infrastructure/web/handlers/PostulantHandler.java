@@ -2,8 +2,8 @@ package com.democracy.democracy_orchestrator.infrastructure.web.handlers;
 
 
 import com.democracy.democracy_orchestrator.domain.models.Person;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTriggerImpl;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.postulation.PostulationEvents;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation.PostulantTriggerImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;

@@ -1,4 +1,4 @@
-package com.democracy.democracy_orchestrator.infrastructure.statemachine.states;
+package com.democracy.democracy_orchestrator.infrastructure.statemachine.states.postulation;
 
 public enum PostulationStates {
     NEW, PERSON_VALIDATED, IS_VALIDATED_PERSON,

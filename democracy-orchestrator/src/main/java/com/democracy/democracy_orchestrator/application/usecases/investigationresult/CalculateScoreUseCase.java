@@ -11,6 +11,8 @@ import java.util.UUID;
 
 @Component
 public class CalculateScoreUseCase implements CalculateScoreIn {
+
+
     private int score;
     private final InvestigationResultOut investigationResultOut;
 
@@ -37,7 +39,6 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         });
         criminalRecords.forEach(cr ->{
             if(!cr.getCriminalRecordId().isEmpty()){
-                System.out.println("ENTRO POR ACA...");
                 score--;
                 investigationResult.setIsApprove(false);
             }

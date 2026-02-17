@@ -5,8 +5,8 @@ import com.democracy.democracy_orchestrator.application.services.InvestigationSe
 import com.democracy.democracy_orchestrator.application.services.TokenService;
 import com.democracy.democracy_orchestrator.domain.models.Document;
 import com.democracy.democracy_orchestrator.domain.models.Profession;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTrigger;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTriggerImpl;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation.PostulantTrigger;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation.PostulantTriggerImpl;
 import org.springframework.messaging.Message;
 import org.springframework.web.reactive.function.client.WebClient;
 import lombok.extern.slf4j.Slf4j;

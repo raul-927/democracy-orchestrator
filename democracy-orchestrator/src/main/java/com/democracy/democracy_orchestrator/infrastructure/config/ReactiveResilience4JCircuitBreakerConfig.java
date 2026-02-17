@@ -1,7 +1,6 @@
 package com.democracy.democracy_orchestrator.infrastructure.config;
 
 
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTriggerImpl;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -16,6 +15,7 @@ import org.springframework.context.annotation.Configuration;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Sinks;
 
 @Slf4j
 @Configuration
@@ -31,6 +31,14 @@ public class ReactiveResilience4JCircuitBreakerConfig {
 
     @Autowired
     private Resilience4JConfigurationProperties resilience4JConfigurationProperties;
+
+
+
+
+    @Bean
+    public Sinks.Many returnSiksMany(){
+        return Sinks.many().multicast().onBackpressureBuffer();
+    }
 
 
 

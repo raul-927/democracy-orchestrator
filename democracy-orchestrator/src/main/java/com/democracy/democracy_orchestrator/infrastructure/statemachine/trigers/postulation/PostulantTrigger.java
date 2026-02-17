@@ -1,11 +1,11 @@
-package com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers;
+package com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation;
 
 import com.democracy.democracy_orchestrator.domain.models.InvestigationResult;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.PostulationStates;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.postulation.PostulationEvents;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.postulation.PostulationStates;
 import org.springframework.messaging.Message;
+import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.StateMachineEventResult;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

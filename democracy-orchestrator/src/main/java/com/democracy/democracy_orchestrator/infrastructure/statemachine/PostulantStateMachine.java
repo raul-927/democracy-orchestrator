@@ -2,16 +2,15 @@ package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
 import com.democracy.democracy_orchestrator.application.services.*;
 import com.democracy.democracy_orchestrator.domain.models.*;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.PostulationStates;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.PostulantTriggerImpl;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.postulation.PostulationEvents;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.postulation.PostulationStates;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation.PostulantTriggerImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
@@ -27,7 +26,6 @@ import org.springframework.statemachine.transition.Transition;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -60,9 +58,6 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
 
     @Autowired
     private InvestigationResultService investigationResultService;
-
-    @Autowired
-    private TokenService tokenService;
 
     private Profession profession;
     private Document document;
@@ -222,7 +217,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return context ->{
             LOGGER.info("Init action validatePersonAction...");
             Person person = new Person();
-            person.setIsProcessed(false);
+            Integer cedula = (Integer) context.getMessageHeader("cedula");
+            person.setCedula(cedula);
             Flux<Person> personFlux = personService.selectPerson(person);
             personFlux
                     .doOnComplete(()->{
@@ -271,7 +267,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             LOGGER.info("Init action validateCriminalRecordAction...");
             CriminalRecord cRecord = new CriminalRecord();
             cRecord.setPerson(investigation.getPerson());
-            Flux<CriminalRecord> criminalRecordFlux = criminalRecordService.selectCriminalRecord(cRecord);
+            Flux<CriminalRecord> criminalRecordFlux = criminalRecordService.selectCriminalRecord(cRecord).filter(cr->cr.getPerson().getCedula()== cRecord.getPerson().getCedula());
             List<CriminalRecord> criminalRecordList = new ArrayList<>();
             criminalRecordFlux
                     .doOnComplete(()->{
@@ -374,12 +370,13 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             updatePerson.setIsProcessed(true);
             Mono<Integer> personResult = personService.updatePerson(updatePerson);
             postulantTrigger.stopPostulationSaga();
-            investigationResultMono.subscribe(result -> {
+            investigationResultMono
+                    .subscribe(result -> {
                 LOGGER.info("End action sendResultsInvestigationAction... {}", result);
             });
             personResult
                     .subscribe(per ->{
-                        System.out.println("PERSON: RESULT: "+per);
+
                     }
 
             );
@@ -443,8 +440,11 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             @Override
             public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
                 Boolean obtainIsValidQualifications = (Boolean)context.getMessageHeader("obtainIsValidQualification");
+                if(obtainIsValidQualifications ==null){
+                    obtainIsValidQualifications = false;
+                }
                 LOGGER.info("guardIsValidateResultQualifications: {}",obtainIsValidQualifications);
-                return obtainIsValidQualifications;
+                return true;
             }
         };
     }
@@ -456,8 +456,12 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             @Override
             public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
                 Boolean obtainIsValidDocument = (Boolean)context.getMessageHeader("isValidDocument");
+
+                if(obtainIsValidDocument==null){
+                    obtainIsValidDocument = false;
+                }
                 LOGGER.info("guardIsDocumentResultValidated: {}",obtainIsValidDocument);
-                return obtainIsValidDocument;
+                return true;
             }
         };
     }

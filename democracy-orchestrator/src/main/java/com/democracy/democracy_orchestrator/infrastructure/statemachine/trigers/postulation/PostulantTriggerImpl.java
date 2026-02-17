@@ -1,9 +1,9 @@
-package com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers;
+package com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation;
 
 import com.democracy.democracy_orchestrator.application.services.InvestigationService;
 import com.democracy.democracy_orchestrator.domain.models.InvestigationResult;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.PostulationEvents;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.PostulationStates;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.postulation.PostulationEvents;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.postulation.PostulationStates;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,9 +15,10 @@ import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
 @Slf4j
 @Component
-public class PostulantTriggerImpl implements PostulantTrigger{
+public class PostulantTriggerImpl implements PostulantTrigger {
     Logger LOGGER = LoggerFactory.getLogger(PostulantTriggerImpl.class);
 
     @Autowired

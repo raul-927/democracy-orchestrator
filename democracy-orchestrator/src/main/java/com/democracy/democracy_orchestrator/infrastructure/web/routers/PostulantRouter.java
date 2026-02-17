@@ -16,7 +16,6 @@ public class PostulantRouter {
     //@Bean
     public RouterFunction<ServerResponse> routerPostulant(PostulantHandler handler){
         String returnUrl = DEMOCRACY_ORCHESTRATOR.concat(INVESTIGATION).concat(SELECT);
-        System.out.println("URL: "+returnUrl);
         return RouterFunctions
            .route(
                    POST(returnUrl), handler::selectPostulant);
