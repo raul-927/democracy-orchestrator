@@ -64,6 +64,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     private Profession profession;
     private Document document;
     private Investigation investigation;
+    private Person person;
 
     private Boolean isValidPerson;
     private Boolean isValidProfession;
@@ -103,8 +104,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 .and()
                 .withChoice()
                     .source(IS_VALIDATED_PERSON)
-                    .first(PROFESSION_VALIDATED, guardIsValidPerson())
-                    .last(NOT_VALID)
+                        .first(PROFESSION_VALIDATED, guardIsValidPerson())
+                        .last(NOT_VALID)
 
                 .and()
                 .withExternal()
@@ -119,8 +120,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 .and()
                 .withChoice()
                     .source(IS_VALIDATE_PROFESSION)
-                    .first(CRIMINAL_RECORDS_VALIDATED, guardIsValidProfession())
-                    .last(NOT_VALID)
+                        .first(CRIMINAL_RECORDS_VALIDATED, guardIsValidProfession())
+                        .last(NOT_VALID)
 
                 .and()
                 .withExternal()
@@ -135,8 +136,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 .and()
                 .withChoice()
                     .source(IS_VALIDATED_RESULT_CRIMINAL_RECORD)
-                    .first(QUALIFICATION_VALIDATED, guardIsValidatedResultCriminalRecord())
-                    .last(NOT_VALID)
+                        .first(QUALIFICATION_VALIDATED, guardIsValidatedResultCriminalRecord())
+                        .last(NOT_VALID)
 
                 .and()
                 .withExternal()
@@ -151,8 +152,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 .and()
                 .withChoice()
                     .source(IS_VALIDATE_RESULT_QUALIFICATIONS)
-                    .first(VALIDATE_DOCUMENT, guardIsValidateResultQualifications())
-                    .last(NOT_VALID)
+                        .first(VALIDATE_DOCUMENT, guardIsValidateResultQualifications())
+                        .last(NOT_VALID)
 
                 .and()
                 .withExternal()
@@ -167,8 +168,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                 .and()
                 .withChoice()
                     .source(IS_VALIDATED_DOCUMENTS)
-                    .first(OBTAIN_RESULTS, guardIsDocumentResultValidated())
-                    .last(NOT_VALID)
+                        .first(OBTAIN_RESULTS, guardIsDocumentResultValidated())
+                        .last(NOT_VALID)
 
                 .and()
                 .withExternal()
@@ -208,11 +209,12 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public Action<PostulationStates, PostulationEvents> validatePersonAction(){
         return context ->{
             LOGGER.info("Init action validatePersonAction...");
-            Person person = new Person();
+            person = new Person();
             Integer cedula = (Integer) context.getMessageHeader("cedula");
             person.setCedula(cedula);
             personService.selectPerson(person)
                     .doOnComplete(()->{
+                        LOGGER.info("End action validatePersonAction...");
                         postulantTrigger.sendEvent("SEND_RESULT_VALIDATED_PERSON",Mono.just(
                                 MessageBuilder.withPayload(SEND_RESULT_VALIDATED_PERSON)
                                         .setHeader("isValidPerson",isValidPerson)
@@ -238,6 +240,8 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                        LOGGER.error("ERROR: {}", err.getMessage());
                    }).
             doOnComplete(()->{
+                LOGGER.info("sendIsValidProfession: {}",isValidProfession);
+                LOGGER.info("End action validateProfessionAction...");
                 postulantTrigger.sendEvent("VALIDATE_PROFESSION ",Mono.just(
                         MessageBuilder
                                 .withPayload(VALIDATE_PROFESSION)
@@ -260,6 +264,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             List<CriminalRecord> criminalRecordList = new ArrayList<>();
             criminalRecordService.selectCriminalRecord(cRecord)
                     .doOnComplete(()->{
+                        LOGGER.info("End action validateCriminalRecordAction...");
                         investigation.setCriminalRecords(criminalRecordList);
                         isValidCriminalRecord = !criminalRecordList.isEmpty();
                         postulantTrigger.sendEvent("SEND_RESULT_CRIMINAL_RECORD_VALIDATED",Mono.just(
@@ -280,19 +285,28 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             Qualification qualification = new Qualification();
             qualification.setPerson(person);
             List<Qualification> qualifications = new ArrayList<>();
-            qualificationService.selectQualification(qualification).doOnComplete(()->{
-                investigation.setQualifications(qualifications);
-                postulantTrigger.sendEvent("SEND_RESULT_VALIDATE_QUALIFICATIONS",Mono.just(
-                        MessageBuilder.withPayload(PostulationEvents.SEND_RESULT_VALIDATE_QUALIFICATIONS)
-                                .setHeader("obtainIsValidQualification", isValidQualification)
-                                .setHeader("document",document)
-                                .build()
-                ));
-            }).subscribe( result ->{
-                isValidQualification = result.isApproved();
-                qualifications.add(result);
-                document = result.getDocument();
-            });
+            qualificationService.selectQualification(qualification)
+                    .doOnComplete(()->{
+                        if(document ==null){
+                            document = new Document();
+                            document.setDocumentId("6ce735f8-f182-475a-bcd9-92a378bb6282");
+                        }
+                        investigation.setQualifications(qualifications);
+                        postulantTrigger.sendEvent("SEND_RESULT_VALIDATE_QUALIFICATIONS",Mono.just(
+                                MessageBuilder.withPayload(PostulationEvents.SEND_RESULT_VALIDATE_QUALIFICATIONS)
+                                        .setHeader("obtainIsValidQualification", isValidQualification)
+                                        .setHeader("document",document)
+                                        .build()
+                        ));
+                    })
+                    .switchIfEmpty( em->{
+                        System.out.println("ESTA VACIO");
+                    })
+                    .subscribe( result ->{
+                        isValidQualification = result.getApproved();
+                        qualifications.add(result);
+                        document = result.getDocument();
+                    });
         };
     }
 
@@ -301,11 +315,13 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
         return context ->{
             LOGGER.info("Init action validateDocumentAction...");
             Document document = (Document)context.getMessageHeader("document");
-            documentService.selectDocument(document).doOnComplete(()->{
-                postulantTrigger.sendEvent("SEND_RESULT_VALIDATE_DOCUMENT",Mono.just(
-                        MessageBuilder.withPayload(PostulationEvents.SEND_RESULT_VALIDATE_DOCUMENT)
-                                .setHeader("isValidDocument",isValidDocument)
-                                .build()));
+            documentService.selectDocument(document)
+                    .doOnComplete(()->{
+                        LOGGER.info("End action validateDocumentAction...");
+                        postulantTrigger.sendEvent("SEND_RESULT_VALIDATE_DOCUMENT",Mono.just(
+                                MessageBuilder.withPayload(PostulationEvents.SEND_RESULT_VALIDATE_DOCUMENT)
+                                        .setHeader("isValidDocument",isValidDocument)
+                                        .build()));
             }).subscribe(result ->{
                 LOGGER.info("DOCUMENT_ID: {}",result.getDocumentId());
                 isValidDocument = result.isDocumentApproved();
@@ -343,17 +359,12 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             updatePerson.setCedula(investigation.getPerson().getCedula());
             updatePerson.setIsProcessed(true);
             Mono<Integer> personResult = personService.updatePerson(updatePerson);
-            postulantTrigger.stopPostulationSaga();
             investigationResultService.calculateScore(investigation)
                     .subscribe(result -> {
                 LOGGER.info("End action sendResultsInvestigationAction... {}", result);
             });
-            personResult
-                    .subscribe(per ->{
-
-                    }
-
-            );
+            personResult.subscribe();
+            postulantTrigger.stopPostulationSaga();
         };
     }
 
@@ -415,10 +426,10 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
             public boolean evaluate(StateContext<PostulationStates, PostulationEvents> context) {
                 Boolean obtainIsValidQualifications = (Boolean)context.getMessageHeader("obtainIsValidQualification");
                 if(obtainIsValidQualifications ==null){
-                    obtainIsValidQualifications = false;
+                    obtainIsValidQualifications = true;
                 }
                 LOGGER.info("guardIsValidateResultQualifications: {}",obtainIsValidQualifications);
-                return true;
+                return obtainIsValidQualifications;
             }
         };
     }

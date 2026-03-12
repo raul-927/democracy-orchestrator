@@ -13,11 +13,5 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 
 //@Configuration
 public class PostulantRouter {
-    //@Bean
-    public RouterFunction<ServerResponse> routerPostulant(PostulantHandler handler){
-        String returnUrl = DEMOCRACY_ORCHESTRATOR.concat(INVESTIGATION).concat(SELECT);
-        return RouterFunctions
-           .route(
-                   POST(returnUrl), handler::selectPostulant);
-    }
+
 }

@@ -18,6 +18,6 @@ public class Qualification {
     private Person          person;
     private Institute 		institute;
     private Document        document;
-    private boolean 		verified;
-    private boolean			approved;
+    private Boolean 		verified;
+    private Boolean			approved;
 }

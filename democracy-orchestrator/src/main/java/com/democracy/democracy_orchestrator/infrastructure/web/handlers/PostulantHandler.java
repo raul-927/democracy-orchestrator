@@ -20,8 +20,8 @@ public class PostulantHandler {
     @Autowired
     private PostulantTriggerImpl postulantTrigger;
 
-    public Mono<ServerResponse> selectPostulant(ServerRequest request){
-        postulantTrigger.initPostulationSaga();
+    /*public Mono<ServerResponse> selectPostulant(ServerRequest request){
+        //postulantTrigger.initPostulationSaga();
         var obtainPerson = request.bodyToMono(Person.class);
         Person sendPerson  = new Person();
         obtainPerson.map( str ->{
@@ -37,5 +37,5 @@ public class PostulantHandler {
                         MessageBuilder.withPayload(PostulationEvents.VALIDATE_PERSON)
                                 .setHeader("cedula", sendPerson.getCedula())
                                 .build())), Person.class);
-    }
+    }*/
 }

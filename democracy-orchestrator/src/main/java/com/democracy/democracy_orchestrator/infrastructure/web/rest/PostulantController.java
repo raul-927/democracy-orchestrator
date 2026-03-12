@@ -29,7 +29,6 @@ public class PostulantController {
             value = "/investigation/select",
             produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
     public  Flux<Person> getInvestigation(@RequestBody List<Person> person) {
-        postulantTrigger.initPostulationSaga();
         Flux<Person> personFlux = personService.selectPerson(new Person().setIsProcessed(false));
         personFlux
                 .map(item->{
@@ -40,7 +39,7 @@ public class PostulantController {
                                     .build()));
                     return item;
                 })
-                .delayElements(Duration.ofSeconds(6))
+                .delayElements(Duration.ofMillis(300))
                 .subscribe();
         return personFlux;
     }

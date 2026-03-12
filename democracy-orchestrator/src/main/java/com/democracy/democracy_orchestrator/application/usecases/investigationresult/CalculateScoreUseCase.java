@@ -44,7 +44,7 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
 
         score = 0;
         investigation.getQualifications().forEach( q ->{
-            if(q.isApproved()){
+            if(q.getApproved()){
                 score ++;
             }
         });

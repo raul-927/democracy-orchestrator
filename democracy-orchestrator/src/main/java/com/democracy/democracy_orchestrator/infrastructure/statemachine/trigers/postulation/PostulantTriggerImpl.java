@@ -10,10 +10,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.statemachine.StateMachine;
-import org.springframework.statemachine.StateMachineEventResult;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -33,28 +31,25 @@ public class PostulantTriggerImpl implements PostulantTrigger {
         LOGGER.info("Initializing initPostulationSaga");
         stateMachine = orderStateMachineFactory.getStateMachine();
         stateMachine.startReactively().subscribe();
-        LOGGER.info("Initialize state machine in state: {}", stateMachine.getState().getId());
-
     }
 
     @Override
     public void stopPostulationSaga(){
         LOGGER.info("Initializing stopPostulationSaga");
-        stateMachine.stopReactively().subscribe();
-        LOGGER.info("Final state stopPostulationSaga: {}",stateMachine.getState().getId());
+        stateMachine.stopReactively().doOnSuccess(dos-> LOGGER.info("Final state stopPostulationSaga: {} {} ",dos,stateMachine.getState().getId())).subscribe();
         LOGGER.info("Stopping saga...");
     }
 
+
     @Override
-    public Flux<StateMachineEventResult<PostulationStates, PostulationEvents>> sendEvent(String eventDescription, Mono<Message<PostulationEvents>> event) {
-        LOGGER.info("Initialize sendEvent: {}",eventDescription+"...");
+    public void sendEvent(String eventDescription, Mono<Message<PostulationEvents>> event) {
+
        stateMachine.sendEvent(event)
                 .subscribe(
                         result -> {
                             LOGGER.info("SEND_EVENT: {} {}",eventDescription+" Trigger: ",result.getResultType());
 
                         });
-        return stateMachine.sendEvent(event);
     }
 
     @Override
