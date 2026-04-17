@@ -22,6 +22,7 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import org.springframework.statemachine.guard.Guard;
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
+import org.springframework.statemachine.state.State;
 import org.springframework.statemachine.transition.Transition;
 import reactor.core.publisher.Mono;
 
@@ -202,6 +203,12 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
                     LOGGER.info("Transitioning from: {}, to: {}",transition.getSource().getId(), transition.getTarget().getId());
                 }
             };
+
+            @Override
+            public void stateEntered(State<PostulationStates, PostulationEvents> state) {
+                super.stateEntered(state);
+                LOGGER.info("State Entered: {}",state.getId());
+            }
         };
     }
 //-----------------------------------------ACTIONS----------------------------------------------------------------------
