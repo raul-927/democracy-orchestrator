@@ -24,9 +24,7 @@ public class EventPublisher {
         intervalSubscription = Flux.just(investigationResult)
                // .map(sequence -> "Evento " + sequence)
                 .doOnNext(event -> {
-                    System.out.println("Next Event: "+event);
                     Sinks.EmitResult result = eventSink.tryEmitNext(event.toString());
-                    System.out.println("Result: "+result);
                     if (result.isFailure()) {
                         // Log the failure or take appropriate action
                         System.err.println("Emission failed: " + result);

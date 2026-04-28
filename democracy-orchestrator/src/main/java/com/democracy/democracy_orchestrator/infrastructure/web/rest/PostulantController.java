@@ -62,7 +62,7 @@ public class PostulantController {
             value = "/investigation/fork",
             produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
     public  void getFork(@RequestBody List<Person> person) {
-        //Flux<Person> personFlux = Flux.fromIterable(person);
+
         Flux<Person> personFlux = personService.selectPerson(new Person().setIsProcessed(false));
         personFlux
                 .doOnRequest(request->{
@@ -82,53 +82,7 @@ public class PostulantController {
                     System.out.println("EMPTY personFlux");
                 })
                 .subscribe();
-        //forkTrigger.stopForkSaga();
-
     }
 
-    @PostMapping(
-            value = "/investigation/branch1",
-            produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
-    public  void getBranch1(@RequestBody List<Person> person) {
 
-        forkTrigger.sendEventFork("EVENT_BRANCH_1_COMPLETED", Mono.just(
-                MessageBuilder.withPayload(ForkJoinEvents.EVENT_BRANCH_1_COMPLETED).build()));
-
-        //forkTrigger.stopForkSaga();
-
-    }
-
-    @PostMapping(
-            value = "/investigation/branch2",
-            produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
-    public  void getBranch2(@RequestBody List<Person> person) {
-
-        forkTrigger.sendEventFork("EVENT_BRANCH_2_COMPLETED", Mono.just(
-                MessageBuilder.withPayload(ForkJoinEvents.EVENT_BRANCH_2_COMPLETED).build()));
-
-        //forkTrigger.stopForkSaga();
-
-    }
-
-    @PostMapping(
-            value = "/investigation/branch3",
-            produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
-    public  void getBranch3(@RequestBody List<Person> person) {
-
-        forkTrigger.sendEventFork("EVENT_BRANCH_3_COMPLETED", Mono.just(
-                MessageBuilder.withPayload(ForkJoinEvents.EVENT_BRANCH_3_COMPLETED).build()));
-
-
-    }
-
-    @PostMapping(
-            value = "/investigation/final",
-            produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
-    public  void getFinal(@RequestBody List<Person> person) {
-
-        forkTrigger.sendEventFork("ALL_BRANCHES_COMPLETED", Mono.just(
-                MessageBuilder.withPayload(ALL_BRANCHES_COMPLETED).build()));
-
-
-    }
 }

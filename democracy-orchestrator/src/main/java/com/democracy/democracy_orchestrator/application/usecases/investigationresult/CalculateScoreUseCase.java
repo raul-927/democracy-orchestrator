@@ -21,7 +21,6 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
 
     @Override
     public Mono<Integer> calculateScore(Investigation investigation) {
-        System.out.println("ENTRA EN CALCULATE_SCORE...");
         InvestigationResult investigationResult = new InvestigationResult();
         investigationResult.setInvestigationId(UUID.randomUUID().toString());
         investigationResult.setPersonId(investigation.getPerson().getPersonId());
@@ -41,7 +40,6 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         else{
             observation = observation.concat(" / Se verifica y se aprueban las calificaciones de sus diplomas");
         }
-        System.out.println("LLEGA POR ACA...");
         score = 0;
         if(investigation.getQualifications()!=null){
             investigation.getQualifications().forEach( q ->{
