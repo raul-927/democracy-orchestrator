@@ -3,7 +3,6 @@ package com.democracy.democracy_orchestrator.infrastructure.web.rest;
 import com.democracy.democracy_orchestrator.application.services.PersonService;
 import com.democracy.democracy_orchestrator.domain.models.Person;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinEvents;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinStateMachine;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.postulation.PostulationEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.forks.ForkTrigger;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation.PostulantTrigger;
@@ -85,6 +84,4 @@ public class PostulantController {
                 })
                 .subscribe();
     }
-
-
 }
