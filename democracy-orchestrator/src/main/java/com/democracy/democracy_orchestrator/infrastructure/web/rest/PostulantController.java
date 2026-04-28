@@ -3,6 +3,7 @@ package com.democracy.democracy_orchestrator.infrastructure.web.rest;
 import com.democracy.democracy_orchestrator.application.services.PersonService;
 import com.democracy.democracy_orchestrator.domain.models.Person;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinEvents;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinStateMachine;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.postulation.PostulationEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.forks.ForkTrigger;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation.PostulantTrigger;
@@ -13,12 +14,18 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.util.List;
+
 
 @RestController
 @RequestMapping("/democracyorchestrator")
 public class PostulantController {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PostulantController.class);
 
     @Autowired
     private PostulantTrigger postulantTrigger;
@@ -48,7 +55,7 @@ public class PostulantController {
 
                 .delayElements(Duration.ofMillis(300))
                 .thenEmpty(em ->{
-                    System.out.println("EMPTY personFlux");
+                    LOGGER.info("EMPTY personFlux");
                 })
                 .subscribe();
         return personFlux;
@@ -62,11 +69,10 @@ public class PostulantController {
         Flux<Person> personFlux = personService.selectPerson(new Person().setIsProcessed(false));
         personFlux
                 .doOnRequest(request->{
-                    System.out.println("DO_ON_REQUEST...");
+                    LOGGER.info("DO_ON_REQUEST...");
                     forkTrigger.initForkSaga();
                 })
                 .map(item->{
-                    System.out.println("PERSON1: "+item);
                     forkTrigger.sendEventFork("START_FORK", Mono.just(
                             MessageBuilder.withPayload(ForkJoinEvents.START_FORK)
                                     .setHeader("person", item)
@@ -75,7 +81,7 @@ public class PostulantController {
                 })
                 .delayElements(Duration.ofMillis(300))
                 .thenEmpty(em ->{
-                    System.out.println("EMPTY personFlux");
+                    LOGGER.info("EMPTY personFlux");
                 })
                 .subscribe();
     }
