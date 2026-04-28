@@ -6,7 +6,6 @@ import com.democracy.democracy_orchestrator.domain.ports.out.InvestigationResult
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -22,6 +21,7 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
 
     @Override
     public Mono<Integer> calculateScore(Investigation investigation) {
+        System.out.println("ENTRA EN CALCULATE_SCORE...");
         InvestigationResult investigationResult = new InvestigationResult();
         investigationResult.setInvestigationId(UUID.randomUUID().toString());
         investigationResult.setPersonId(investigation.getPerson().getPersonId());
@@ -29,31 +29,36 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         investigationResult.setCedula(investigation.getPerson().getCedula());
         investigationResult.setIsApprove(true);
         String observation = "";
-        if(investigation.getCriminalRecords().isEmpty()){
+        if(investigation.getCriminalRecords() == null || investigation.getCriminalRecords().isEmpty()){
             observation = "Se observa que no contiene registros de antecedentes delictivos";
         }
         else{
             observation = "Se investiga y se obtiene que existen registro de antecedentes delictivos";
         }
-        if(investigation.getQualifications().isEmpty()){
+        if(investigation.getQualifications() == null || investigation.getQualifications().isEmpty()){
             observation = observation.concat(" / Se verifica que no contiene Calificaciones en sus diplomas");
         }
         else{
             observation = observation.concat(" / Se verifica y se aprueban las calificaciones de sus diplomas");
         }
-
+        System.out.println("LLEGA POR ACA...");
         score = 0;
-        investigation.getQualifications().forEach( q ->{
-            if(q.getApproved()){
-                score ++;
-            }
-        });
-        investigation.getCriminalRecords().forEach(cr ->{
-            if(!cr.getCriminalRecordId().isEmpty()){
-                score--;
-                investigationResult.setIsApprove(false);
-            }
-        });
+        if(investigation.getQualifications()!=null){
+            investigation.getQualifications().forEach( q ->{
+                if(q.getApproved()){
+                    score ++;
+                }
+            });
+        }
+        if(investigation.getCriminalRecords()!=null){
+            investigation.getCriminalRecords().forEach(cr ->{
+                if(!cr.getCriminalRecordId().isEmpty()){
+                    score--;
+                    investigationResult.setIsApprove(false);
+                }
+            });
+        }
+
         if(score <=0){
             investigationResult.setIsApprove(false);
             observation = observation.concat("/ El puntaje no supera el límite mínimo necesario");

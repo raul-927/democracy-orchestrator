@@ -1,6 +1,7 @@
 package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.forks.ForkTrigger;
+import com.democracy.democracy_orchestrator.application.services.*;
+import com.democracy.democracy_orchestrator.domain.models.*;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,12 +18,9 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import org.springframework.statemachine.listener.StateMachineListener;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
-import org.springframework.statemachine.transition.Transition;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 import static com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinEvents.*;
 import static com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinStates.*;
@@ -33,8 +31,21 @@ import static com.democracy.democracy_orchestrator.infrastructure.statemachine.F
 public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<ForkJoinStates, ForkJoinEvents> {
 
     @Autowired
-    private ForkTrigger forkTrigger;
+    private PersonService personService;
 
+    @Autowired
+    private ProfessionService professionService;
+
+    @Autowired
+    private CriminalRecordService criminalRecordService;
+
+    @Autowired
+    private QualificationService qualificationService;
+
+    @Autowired
+    private InvestigationResultService resultService;
+
+    private Investigation investigationResult;
     private static final Logger LOGGER = LoggerFactory.getLogger(ForkJoinStateMachine.class);
 
     @Override
@@ -49,22 +60,25 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
                 .initial(INITIAL)
                 .fork(FORK_POINT)
                 .join(JOIN_POINT)
-                .state(FINAL, finalAction(), null) // Corregido: La firma correcta para añadir acciones a un estado
+                .state(FINAL, finalAction()) // La acción se ejecuta al entrar en FINAL
                 .end(FINAL)
                 .and()
                 .withStates()
                     .parent(FORK_POINT)
                     .initial(BRANCH_1)
+                    .state(BRANCH_1, branch1Task(), null)
                     .end(BRANCH_1_DONE)
                     .and()
                 .withStates()
                     .parent(FORK_POINT)
                     .initial(BRANCH_2)
+                    .state(BRANCH_2, branch2Task(), null)
                     .end(BRANCH_2_DONE)
                     .and()
                 .withStates()
                     .parent(FORK_POINT)
                     .initial(BRANCH_3)
+                    .state(BRANCH_3, branch3Task(), null)
                     .end(BRANCH_3_DONE);
     }
 
@@ -72,10 +86,7 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
     public void configure(StateMachineTransitionConfigurer<ForkJoinStates, ForkJoinEvents> transitions) throws Exception {
         transitions
                 .withExternal()
-                    .source(INITIAL)
-                    .target(FORK_POINT)
-                    .event(START_FORK)
-                    .action(startAction())
+                    .source(INITIAL).target(FORK_POINT).event(START_FORK).action(startForkAction())
                 .and()
                 .withFork()
                     .source(FORK_POINT)
@@ -83,23 +94,11 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
                     .target(BRANCH_2)
                     .target(BRANCH_3)
                 .and()
-                .withExternal()
-                    .source(BRANCH_1)
-                    .target(BRANCH_1_DONE)
-                    .event(EVENT_BRANCH_1_COMPLETED)
-                    .action(branch1Action())
+                .withExternal().source(BRANCH_1).target(BRANCH_1_DONE).event(EVENT_BRANCH_1_COMPLETED)
                 .and()
-                .withExternal()
-                    .source(BRANCH_2)
-                    .target(BRANCH_2_DONE)
-                    .event(EVENT_BRANCH_2_COMPLETED)
-                    .action(branch2Action())
+                .withExternal().source(BRANCH_2).target(BRANCH_2_DONE).event(EVENT_BRANCH_2_COMPLETED)
                 .and()
-                .withExternal()
-                    .source(BRANCH_3)
-                    .target(BRANCH_3_DONE)
-                    .event(EVENT_BRANCH_3_COMPLETED)
-                    .action(branch3Action())
+                .withExternal().source(BRANCH_3).target(BRANCH_3_DONE).event(EVENT_BRANCH_3_COMPLETED)
                 .and()
                 .withJoin()
                     .source(BRANCH_1_DONE)
@@ -108,78 +107,110 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
                     .target(JOIN_POINT)
                 .and()
                 .withExternal()
-                    .source(JOIN_POINT)
-                    .target(FINAL);
+                    .source(JOIN_POINT).target(FINAL);
     }
 
     @Bean
     public StateMachineListener<ForkJoinStates, ForkJoinEvents> forkJoinListener() {
         return new StateMachineListenerAdapter<ForkJoinStates, ForkJoinEvents>() {
             @Override
-            public void transition(Transition<ForkJoinStates, ForkJoinEvents> transition) {
-                if (transition != null && transition.getSource() != null && transition.getTarget() != null) {
-                    LOGGER.info("Transition: {} -> {}", transition.getSource().getId(), transition.getTarget().getId());
-                }
-            }
-
-            @Override
             public void stateChanged(State<ForkJoinStates, ForkJoinEvents> from, State<ForkJoinStates, ForkJoinEvents> to) {
                 if (to != null) {
-                    LOGGER.info("State changed to: {}", to.getId());
-                    if (to.getIds() != null && !to.getIds().isEmpty()) {
-                        LOGGER.info("Current active states (including regions): {}", to.getIds().stream().map(Enum::name).collect(Collectors.joining(", ")));
-                    }
+                    LOGGER.info("STATE_CHANGED: {}. Active IDs: {}", to.getId(), to.getIds());
                 }
             }
         };
     }
-    @Bean
-    public Action<ForkJoinStates, ForkJoinEvents> startAction(){
-        return context -> {
-            LOGGER.info("startAction ejecutada.");
 
-            Flux<Long> intervalNumbers = Flux.interval(Duration.ofSeconds(1))
-                    .take(1);
-            intervalNumbers
-                    .doOnRequest(requested -> LOGGER.info("Requested with intervals: " + requested))
-                    .doOnComplete(()->{
-                        forkTrigger.sendEventFork("EVENT_BRANCH_1_COMPLETED", Mono.just(
-                                MessageBuilder.withPayload(EVENT_BRANCH_1_COMPLETED).build()));
-                        forkTrigger.sendEventFork("EVENT_BRANCH_2_COMPLETED", Mono.just(
-                                MessageBuilder.withPayload(EVENT_BRANCH_2_COMPLETED).build()));
-                        forkTrigger.sendEventFork("EVENT_BRANCH_3_COMPLETED", Mono.just(
-                                MessageBuilder.withPayload(EVENT_BRANCH_3_COMPLETED).build()));
+
+    @Bean
+    public Action<ForkJoinStates, ForkJoinEvents>startForkAction(){
+        return context->{
+            investigationResult = new Investigation();
+            System.out.println("Initialize investigationResult...");
+        };
+    }
+
+    @Bean
+    public Action<ForkJoinStates, ForkJoinEvents> branch1Task() {
+        return context -> {
+            LOGGER.info("Executing branch1Task...");
+            Person person = (Person)context.getMessageHeader("person");
+            if (person != null) {
+                investigationResult.setPerson(person);
+                professionService.selectProfession(person.getProfession())
+                    .doFinally(signalType -> {
+                        LOGGER.info("Branch 1 task completed. Sending EVENT_BRANCH_1_COMPLETED.");
+                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_1_COMPLETED).build())).subscribe();
                     })
                     .subscribe();
-
+            } else {
+                LOGGER.warn("Branch 1: Person not found in ExtendedState.");
+                context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_1_COMPLETED).build())).subscribe();
+            }
         };
     }
+
     @Bean
-    public Action<ForkJoinStates, ForkJoinEvents> branch1Action() {
+    public Action<ForkJoinStates, ForkJoinEvents> branch2Task() {
         return context -> {
-            LOGGER.info("branch1Action ejecutada.");
+            LOGGER.info("Executing branch2Task...");
+            Person person = (Person) context.getExtendedState().getVariables().get("person");
+            if (person != null) {
+                CriminalRecord cr = new CriminalRecord();
+                cr.setPerson(person);
 
-
+                criminalRecordService.selectCriminalRecord(cr)
+                    .doFinally(signalType -> {
+                        LOGGER.info("Branch 2 task completed. Sending EVENT_BRANCH_2_COMPLETED.");
+                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_2_COMPLETED).build())).subscribe();
+                    })
+                    .subscribe();
+            } else {
+                context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_2_COMPLETED).build())).subscribe();
+            }
         };
     }
 
     @Bean
-    public Action<ForkJoinStates, ForkJoinEvents> branch2Action() {
+    public Action<ForkJoinStates, ForkJoinEvents> branch3Task() {
         return context -> {
-            LOGGER.info("branch2Action ejecutada.");
-
+            LOGGER.info("Executing branch3Task...");
+            Person person = (Person) context.getExtendedState().getVariables().get("person");
+            if (person != null) {
+                Qualification qReq = new Qualification(); qReq.setPerson(person);
+                qualificationService.selectQualification(qReq)
+                    .doFinally(signalType -> {
+                        LOGGER.info("Branch 3 with person task completed. Sending EVENT_BRANCH_3_COMPLETED.");
+                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_3_COMPLETED).build())).subscribe();
+                    })
+                    .subscribe();
+            } else {
+                LOGGER.info("Branch 3 with null person task completed. Sending EVENT_BRANCH_3_COMPLETED.");
+                context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_3_COMPLETED).build())).subscribe();
+            }
         };
-    }
-
-    @Bean
-    public Action<ForkJoinStates, ForkJoinEvents> branch3Action() {
-        return context -> LOGGER.info("branch3Action ejecutada.");
     }
 
     @Bean
     public Action<ForkJoinStates, ForkJoinEvents> finalAction() {
         return context -> {
-            LOGGER.info("¡FINAL ACTION EJECUTADA! El proceso Fork/Join ha convergido correctamente.");
+            LOGGER.info("¡PROCESO FORK/JOIN FINALIZADO CON ÉXITO!");
+            String observation1 = "";
+            investigationResult.setInvestigationId(UUID.randomUUID().toString());
+
+            LOGGER.info("Init action sendResultsInvestigationAction...");
+            Person updatePerson = new Person();
+            updatePerson.setCedula(investigationResult.getPerson().getCedula());
+            updatePerson.setIsProcessed(true);
+            resultService.calculateScore(investigationResult)
+                    .doOnSuccess(success->{
+                        LOGGER.info("End action sendResultsInvestigationAction...");
+                    })
+                    .subscribe();
+            personService.updatePerson(updatePerson).subscribe();
+            context.getStateMachine().stopReactively();
+
         };
     }
 }

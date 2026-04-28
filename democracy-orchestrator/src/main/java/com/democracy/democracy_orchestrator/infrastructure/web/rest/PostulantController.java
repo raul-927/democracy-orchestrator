@@ -42,6 +42,7 @@ public class PostulantController {
         personFlux
                 .map(item->{
                     postulantTrigger.initPostulationSaga();
+
                     postulantTrigger.sendEvent("VALIDATE_PERSON", Mono.just(
                             MessageBuilder.withPayload(PostulationEvents.VALIDATE_PERSON)
                                     .setHeader("cedula", item.getCedula())
@@ -61,11 +62,26 @@ public class PostulantController {
             value = "/investigation/fork",
             produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
     public  void getFork(@RequestBody List<Person> person) {
-
-        forkTrigger.initForkSaga();
-        forkTrigger.sendEventFork("START_FORK", Mono.just(
-                MessageBuilder.withPayload(ForkJoinEvents.START_FORK).build()));
-
+        //Flux<Person> personFlux = Flux.fromIterable(person);
+        Flux<Person> personFlux = personService.selectPerson(new Person().setIsProcessed(false));
+        personFlux
+                .doOnRequest(request->{
+                    System.out.println("DO_ON_REQUEST...");
+                    forkTrigger.initForkSaga();
+                })
+                .map(item->{
+                    System.out.println("PERSON1: "+item);
+                    forkTrigger.sendEventFork("START_FORK", Mono.just(
+                            MessageBuilder.withPayload(ForkJoinEvents.START_FORK)
+                                    .setHeader("person", item)
+                                    .build()));
+                    return item;
+                })
+                .delayElements(Duration.ofMillis(300))
+                .thenEmpty(em ->{
+                    System.out.println("EMPTY personFlux");
+                })
+                .subscribe();
         //forkTrigger.stopForkSaga();
 
     }
@@ -110,8 +126,8 @@ public class PostulantController {
             produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
     public  void getFinal(@RequestBody List<Person> person) {
 
-        forkTrigger.sendEventFork("EVENT_FINAL", Mono.just(
-                MessageBuilder.withPayload(EVENT_FINAL).build()));
+        forkTrigger.sendEventFork("ALL_BRANCHES_COMPLETED", Mono.just(
+                MessageBuilder.withPayload(ALL_BRANCHES_COMPLETED).build()));
 
 
     }
