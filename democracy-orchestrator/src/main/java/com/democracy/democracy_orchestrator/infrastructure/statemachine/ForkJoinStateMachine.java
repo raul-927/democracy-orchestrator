@@ -143,7 +143,7 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
         return context->{
             investigationResult = new Investigation();
             document = new Document();
-            System.out.println("Initialize investigationResult...");
+            LOGGER.info("Initialize investigationResult...");
         };
     }
 
@@ -221,7 +221,6 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
     public Action<ForkJoinStates, ForkJoinEvents> branch4Task() {
         return context -> {
             LOGGER.info("Executing branch4Task...");
-            System.out.println("DOC: "+document);
             documentService.selectDocument(document)
                     .doFinally(signalType -> {
                         LOGGER.info("Branch 4 with person task completed. Sending EVENT_BRANCH_4_COMPLETED.");
@@ -237,7 +236,6 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
     public Action<ForkJoinStates, ForkJoinEvents> finalAction() {
         return context -> {
             LOGGER.info("¡PROCESO FORK/JOIN FINALIZADO CON ÉXITO!");
-            String observation1 = "";
             investigationResult.setInvestigationId(UUID.randomUUID().toString());
 
             LOGGER.info("Init action sendResultsInvestigationAction...");
