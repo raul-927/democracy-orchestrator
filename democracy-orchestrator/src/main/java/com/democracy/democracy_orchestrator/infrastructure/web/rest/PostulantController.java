@@ -6,8 +6,6 @@ import com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoin
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.postulation.PostulationEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.forks.ForkTrigger;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation.PostulantTrigger;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation.PostulantTriggerImpl;
-import org.reactivestreams.Subscriber;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.support.MessageBuilder;
@@ -17,8 +15,6 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
-
-import static com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinEvents.*;
 
 @RestController
 @RequestMapping("/democracyorchestrator")
