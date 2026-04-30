@@ -20,6 +20,8 @@ import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinEvents.*;
@@ -49,6 +51,8 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
     private InvestigationResultService resultService;
 
     private Investigation investigationResult;
+    private List<Qualification> qualificationList;
+    private List<CriminalRecord> criminalRecordList;
     private Document document;
     private static final Logger LOGGER = LoggerFactory.getLogger(ForkJoinStateMachine.class);
 
@@ -142,6 +146,8 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
     public Action<ForkJoinStates, ForkJoinEvents>startForkAction(){
         return context->{
             investigationResult = new Investigation();
+            qualificationList = new ArrayList<>();
+            criminalRecordList = new ArrayList<>();
             document = new Document();
             LOGGER.info("Initialize investigationResult...");
         };
@@ -175,12 +181,15 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
             if (person != null) {
                 CriminalRecord cr = new CriminalRecord();
                 cr.setPerson(person);
-
                 criminalRecordService.selectCriminalRecord(cr)
                     .doFinally(signalType -> {
+                        investigationResult.setCriminalRecords(criminalRecordList);
                         LOGGER.info("Branch 2 task completed. Sending EVENT_BRANCH_2_COMPLETED.");
                         context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_2_COMPLETED).build())).subscribe();
                     })
+                        .doOnNext(crim->{
+                            criminalRecordList.add(crim);
+                        })
                     .subscribe();
             } else {
                 context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_2_COMPLETED).build())).subscribe();
@@ -197,17 +206,19 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
                 Qualification qReq = new Qualification();
                 qReq.setPerson(person);
                 qualificationService.selectQualification(qReq)
-                    .doFinally(signalType -> {
-                        LOGGER.info("Branch 3 with person task completed. Sending EVENT_BRANCH_3_COMPLETED.");
-                        context.getStateMachine()
-                                .sendEvent(Mono.just(MessageBuilder
-                                        .withPayload(EVENT_BRANCH_3_COMPLETED)
-                                        .setHeader("document", document)
-                                        .build()))
-                                .subscribe();
-                    })
+                        .doFinally(signalType -> {
+                            investigationResult.setQualifications(qualificationList);
+                            LOGGER.info("Branch 3 with person task completed. Sending EVENT_BRANCH_3_COMPLETED.");
+                            context.getStateMachine()
+                                    .sendEvent(Mono.just(MessageBuilder
+                                            .withPayload(EVENT_BRANCH_3_COMPLETED)
+                                            .setHeader("document", document)
+                                            .build()))
+                                    .subscribe();
+                        })
                         .doOnNext(qualification -> {
-                          document =   qualification.getDocument();
+                            qualificationList.add(qualification);
+                            document =   qualification.getDocument();
                         })
                     .subscribe();
             } else {

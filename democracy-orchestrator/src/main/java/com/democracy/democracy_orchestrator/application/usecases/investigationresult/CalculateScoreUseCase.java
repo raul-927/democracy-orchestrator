@@ -28,27 +28,12 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         investigationResult.setCedula(investigation.getPerson().getCedula());
         investigationResult.setIsApprove(true);
         String observation = "";
+        score = 0;
         if(investigation.getCriminalRecords() == null || investigation.getCriminalRecords().isEmpty()){
             observation = "Se observa que no contiene registros de antecedentes delictivos";
         }
         else{
             observation = "Se investiga y se obtiene que existen registro de antecedentes delictivos";
-        }
-        if(investigation.getQualifications() == null || investigation.getQualifications().isEmpty()){
-            observation = observation.concat(" / Se verifica que no contiene Calificaciones en sus diplomas");
-        }
-        else{
-            observation = observation.concat(" / Se verifica y se aprueban las calificaciones de sus diplomas");
-        }
-        score = 0;
-        if(investigation.getQualifications()!=null){
-            investigation.getQualifications().forEach( q ->{
-                if(q.getApproved()){
-                    score ++;
-                }
-            });
-        }
-        if(investigation.getCriminalRecords()!=null){
             investigation.getCriminalRecords().forEach(cr ->{
                 if(!cr.getCriminalRecordId().isEmpty()){
                     score--;
@@ -56,7 +41,17 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
                 }
             });
         }
-
+        if(investigation.getQualifications() == null || investigation.getQualifications().isEmpty()){
+            observation = observation.concat(" / Se verifica que no contiene Calificaciones en sus diplomas");
+        }
+        else{
+            observation = observation.concat(" / Se verifica y se aprueban las calificaciones de sus diplomas");
+            investigation.getQualifications().forEach( q ->{
+                if(q.getApproved()){
+                    score ++;
+                }
+            });
+        }
         if(score <=0){
             investigationResult.setIsApprove(false);
             observation = observation.concat("/ El puntaje no supera el límite mínimo necesario");
