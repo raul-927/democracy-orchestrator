@@ -1,4 +1,4 @@
-package com.democracy.democracy_orchestrator.infrastructure.statemachine;
+package com.democracy.democracy_orchestrator.infrastructure.statemachine.events.forkjoin;
 
 public enum ForkJoinEvents {
     START_FORK,

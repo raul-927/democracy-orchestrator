@@ -2,6 +2,8 @@ package com.democracy.democracy_orchestrator.infrastructure.statemachine;
 
 import com.democracy.democracy_orchestrator.application.services.*;
 import com.democracy.democracy_orchestrator.domain.models.*;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.forkjoin.ForkJoinEvents;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.forkjoin.ForkJoinStates;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinEvents.*;
-import static com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinStates.*;
+import static com.democracy.democracy_orchestrator.infrastructure.statemachine.events.forkjoin.ForkJoinEvents.*;
+import static com.democracy.democracy_orchestrator.infrastructure.statemachine.states.forkjoin.ForkJoinStates.*;
 
 @Slf4j
 @Configuration

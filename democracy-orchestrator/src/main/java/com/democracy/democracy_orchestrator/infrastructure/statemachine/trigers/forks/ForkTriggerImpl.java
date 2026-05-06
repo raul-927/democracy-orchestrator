@@ -1,7 +1,7 @@
 package com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.forks;
 
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinEvents;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinStates;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.forkjoin.ForkJoinEvents;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.forkjoin.ForkJoinStates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
