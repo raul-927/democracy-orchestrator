@@ -44,7 +44,6 @@ public class PostulantController {
         personFlux
                 .map(item->{
                     postulantTrigger.initPostulationSaga();
-
                     postulantTrigger.sendEvent("VALIDATE_PERSON", Mono.just(
                             MessageBuilder.withPayload(PostulationEvents.VALIDATE_PERSON)
                                     .setHeader("cedula", item.getCedula())
