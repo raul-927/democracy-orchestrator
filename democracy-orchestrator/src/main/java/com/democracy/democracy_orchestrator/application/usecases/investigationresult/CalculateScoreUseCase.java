@@ -11,6 +11,13 @@ import java.util.UUID;
 @Component
 public class CalculateScoreUseCase implements CalculateScoreIn {
 
+    private static final String  NO_CRIMINAL_RECORD= "Se observa que no contiene registros de antecedentes delictivos";
+    private static final String POSITIVE_CRIMINAL_RECORD = "Se investiga y se obtiene que existen registro de antecedentes delictivos";
+    private static final String NOT_CALIFICATIONS_TITLE = "/ Se verifica que no contiene Calificaciones en sus diplomas";
+    private static final String YES_CALIFICATIONS_TITLE = " / Se verifica y se aprueban las calificaciones de sus diplomas";
+    private static final String DOCUMENTATION_NO_OK= " / Se verifica que no contiene documentación";
+    private static final String DOCUMENTATION_OK = " / Se verifica y se aprueban los documentos presentados";
+    private static final String SCORE_NO_OK = "/ El puntaje no supera el límite mínimo necesario";
 
     private int score;
     private final InvestigationResultOut investigationResultOut;
@@ -30,10 +37,10 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         String observation = "";
         score = 0;
         if(investigation.getCriminalRecords() == null || investigation.getCriminalRecords().isEmpty()){
-            observation = "Se observa que no contiene registros de antecedentes delictivos";
+            observation = NO_CRIMINAL_RECORD;
         }
         else{
-            observation = "Se investiga y se obtiene que existen registro de antecedentes delictivos";
+            observation = POSITIVE_CRIMINAL_RECORD;
             investigation.getCriminalRecords().forEach(cr ->{
                 if(!cr.getCriminalRecordId().isEmpty()){
                     score--;
@@ -42,10 +49,10 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
             });
         }
         if(investigation.getQualifications() == null || investigation.getQualifications().isEmpty()){
-            observation = observation.concat(" / Se verifica que no contiene Calificaciones en sus diplomas");
+            observation = observation.concat(NOT_CALIFICATIONS_TITLE);
         }
         else{
-            observation = observation.concat(" / Se verifica y se aprueban las calificaciones de sus diplomas");
+            observation = observation.concat(YES_CALIFICATIONS_TITLE);
             investigation.getQualifications().forEach( q ->{
                 if(q.getApproved()){
                     score ++;
@@ -53,9 +60,9 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
             });
         }
         if(investigation.getDocuments()==null || investigation.getDocuments().isEmpty()){
-            observation = observation.concat(" / Se verifica que no contiene documentación");
+            observation = observation.concat(DOCUMENTATION_NO_OK);
         }else {
-            observation = observation.concat(" / Se verifica y se aprueban los documentos presentados");
+            observation = observation.concat(DOCUMENTATION_OK);
             investigation.getDocuments().forEach(d ->{
                 if(d.isDocumentApproved()){
                     score ++;
@@ -64,7 +71,7 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         }
         if(score <=0){
             investigationResult.setIsApprove(false);
-            observation = observation.concat("/ El puntaje no supera el límite mínimo necesario");
+            observation = observation.concat(SCORE_NO_OK);
         }
         investigationResult.setObservation(observation);
         investigationResult.setScore(score);
