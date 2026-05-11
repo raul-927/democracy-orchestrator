@@ -55,6 +55,7 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
     private Investigation investigationResult;
     private List<Qualification> qualificationList;
     private List<CriminalRecord> criminalRecordList;
+    private List<Document> documents;
     private Document document;
     private static final Logger LOGGER = LoggerFactory.getLogger(ForkJoinStateMachine.class);
 
@@ -150,6 +151,7 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
             investigationResult = new Investigation();
             qualificationList = new ArrayList<>();
             criminalRecordList = new ArrayList<>();
+            documents = new ArrayList<>();
             document = new Document();
             LOGGER.info("Initialize investigationResult...");
         };
@@ -237,6 +239,7 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
             documentService.selectDocument(document)
                     .doFinally(signalType -> {
                         LOGGER.info("Branch 4 with person task completed. Sending EVENT_BRANCH_4_COMPLETED.");
+                        investigationResult.setDocuments(documents);
                         context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_4_COMPLETED).build())).subscribe();
                     })
                     .subscribe();

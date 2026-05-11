@@ -52,6 +52,16 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
                 }
             });
         }
+        if(investigation.getDocuments()==null || investigation.getDocuments().isEmpty()){
+            observation = observation.concat(" / Se verifica que no contiene documentación");
+        }else {
+            observation = observation.concat(" / Se verifica y se aprueban los documentos presentados");
+            investigation.getDocuments().forEach(d ->{
+                if(d.isDocumentApproved()){
+                    score ++;
+                }
+            });
+        }
         if(score <=0){
             investigationResult.setIsApprove(false);
             observation = observation.concat("/ El puntaje no supera el límite mínimo necesario");

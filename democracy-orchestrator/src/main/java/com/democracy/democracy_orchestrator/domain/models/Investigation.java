@@ -18,5 +18,6 @@ public class Investigation {
     private Person                person;
     private List<CriminalRecord>  criminalRecords;
     private List<Qualification>   qualifications;
+    private List<Document>        documents;
     private String 				  observation;
 }
