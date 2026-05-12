@@ -236,11 +236,15 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
     public Action<ForkJoinStates, ForkJoinEvents> branch4Task() {
         return context -> {
             LOGGER.info("Executing branch4Task...");
-            documentService.selectDocument(document)
+            Person person = (Person)context.getMessageHeader("person");
+            documentService.selectDocumentByCedula(person)
                     .doFinally(signalType -> {
                         LOGGER.info("Branch 4 with person task completed. Sending EVENT_BRANCH_4_COMPLETED.");
                         investigationResult.setDocuments(documents);
                         context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_4_COMPLETED).build())).subscribe();
+                    })
+                    .doOnNext(doc ->{
+                        documents.add(doc);
                     })
                     .subscribe();
         };

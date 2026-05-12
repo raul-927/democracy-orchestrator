@@ -59,15 +59,15 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
                 }
             });
         }
-        if(investigation.getDocuments()==null || investigation.getDocuments().isEmpty()){
-            observation = observation.concat(DOCUMENTATION_NO_OK);
-        }else {
+        if(investigation.getDocuments()!=null && !investigation.getDocuments().isEmpty()){
             observation = observation.concat(DOCUMENTATION_OK);
             investigation.getDocuments().forEach(d ->{
                 if(d.isDocumentApproved()){
                     score ++;
                 }
             });
+        }else {
+            observation = observation.concat(DOCUMENTATION_NO_OK);
         }
         if(score <=0){
             investigationResult.setIsApprove(false);

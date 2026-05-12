@@ -77,7 +77,7 @@ public class PostulantController {
                                     .build()));
                     return item;
                 })
-                .delayElements(Duration.ofMillis(300))
+                .delayElements(Duration.ofMillis(450))
                 .thenEmpty(em ->{
                     LOGGER.info("EMPTY personFlux");
                 })

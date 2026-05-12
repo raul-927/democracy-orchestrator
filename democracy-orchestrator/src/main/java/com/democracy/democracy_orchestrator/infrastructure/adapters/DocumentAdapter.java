@@ -2,6 +2,7 @@ package com.democracy.democracy_orchestrator.infrastructure.adapters;
 
 import com.democracy.democracy_orchestrator.application.services.TokenService;
 import com.democracy.democracy_orchestrator.domain.models.Document;
+import com.democracy.democracy_orchestrator.domain.models.Person;
 import com.democracy.democracy_orchestrator.domain.ports.out.DocumentOut;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ReactiveHttpOutputMessage;
@@ -11,10 +12,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
-import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.LOCAL_HOST_8082;
-import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.HUMAN_RESOURCES;
-import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.DOCUMENT;
-import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.SELECT;
+import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.*;
 
 @Component
 public class DocumentAdapter implements DocumentOut {
@@ -32,6 +30,17 @@ public class DocumentAdapter implements DocumentOut {
                 .uri(LOCAL_HOST_8082 + HUMAN_RESOURCES + DOCUMENT + SELECT)
                 .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
                 .body(insertDocument)
+                .retrieve()
+                .bodyToFlux(Document.class);
+    }
+
+    @Override
+    public Flux<Document> selectDocumentByCedula(Person person) {
+        BodyInserter<Person, ReactiveHttpOutputMessage> bodySelectDocumentByCedula = BodyInserters.fromValue(person);
+        return webClient.post()
+                .uri(LOCAL_HOST_8082 + HUMAN_RESOURCES + DOCUMENT + SELECT_BY_CEDULA)
+                .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
+                .body(bodySelectDocumentByCedula)
                 .retrieve()
                 .bodyToFlux(Document.class);
     }

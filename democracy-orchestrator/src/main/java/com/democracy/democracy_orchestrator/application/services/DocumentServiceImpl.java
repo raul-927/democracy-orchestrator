@@ -1,6 +1,7 @@
 package com.democracy.democracy_orchestrator.application.services;
 
 import com.democracy.democracy_orchestrator.domain.models.Document;
+import com.democracy.democracy_orchestrator.domain.models.Person;
 import com.democracy.democracy_orchestrator.domain.ports.in.document.SelectDocumentIn;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -17,5 +18,10 @@ public class DocumentServiceImpl implements DocumentService{
     @Override
     public Flux<Document> selectDocument(Document document) {
         return selectDocumentIn.selectDocument(document);
+    }
+
+    @Override
+    public Flux<Document> selectDocumentByCedula(Person person) {
+        return selectDocumentIn.selectDocumentByCedula(person);
     }
 }
