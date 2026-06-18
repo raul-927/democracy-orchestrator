@@ -6,4 +6,5 @@ import reactor.core.publisher.Mono;
 
 public interface SelectPersonIn {
     Flux<Person> selectPerson(Person person);
+    Mono<Long> selectCount();
 }

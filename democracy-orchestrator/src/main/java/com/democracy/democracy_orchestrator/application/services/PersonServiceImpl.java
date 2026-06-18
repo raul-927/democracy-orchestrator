@@ -23,6 +23,11 @@ public class PersonServiceImpl implements PersonService{
     }
 
     @Override
+    public Mono<Long> selectCount() {
+        return selectPersonIn.selectCount();
+    }
+
+    @Override
     public Mono<Integer> updatePerson(Person person) {
         return this.updatePersonIn.updatePerson(person);
     }

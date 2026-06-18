@@ -321,8 +321,10 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     public Action<PostulationStates, PostulationEvents> validateDocumentAction() {
         return context ->{
             LOGGER.info("Init action validateDocumentAction...");
-            Document document = (Document)context.getMessageHeader("document");
-            documentService.selectDocument(document)
+            person = new Person();
+            Integer cedula = (Integer) context.getMessageHeader("cedula");
+            person.setCedula(cedula);
+            documentService.selectDocumentByCedula(person)
                     .doOnComplete(()->{
                         LOGGER.info("End action validateDocumentAction...");
                         postulantTrigger.sendEvent("SEND_RESULT_VALIDATE_DOCUMENT",Mono.just(

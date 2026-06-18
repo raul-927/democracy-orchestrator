@@ -35,6 +35,7 @@ public class PostulantController {
     @Autowired
     private PersonService personService;
 
+    private int contador;
 
     @PostMapping(
             value = "/investigation/select",
@@ -50,8 +51,6 @@ public class PostulantController {
                                     .build()));
                     return item;
                 })
-
-                .delayElements(Duration.ofMillis(300))
                 .thenEmpty(em ->{
                     LOGGER.info("EMPTY personFlux");
                 })
@@ -62,8 +61,8 @@ public class PostulantController {
     @PostMapping(
             value = "/investigation/fork",
             produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
-    public  void getFork(@RequestBody List<Person> person) {
-
+    public  void getFork(@RequestBody int cedula) {
+        int maxRetries = 3;
         Flux<Person> personFlux = personService.selectPerson(new Person().setIsProcessed(false));
         personFlux
                 .doOnRequest(request->{
@@ -77,10 +76,24 @@ public class PostulantController {
                                     .build()));
                     return item;
                 })
-                .delayElements(Duration.ofMillis(450))
+                .delayElements(Duration.ofMillis(100))
                 .thenEmpty(em ->{
-                    LOGGER.info("EMPTY personFlux");
+                    personService.selectCount()
+                            .doOnSuccess(co ->{
+
+                                System.out.println("SELECT_COUNT: "+co);
+                                if(co != 0){
+                                    contador ++;
+                                    forkTrigger.stopForkSaga();
+                                    this.getFork(cedula);
+                                }else{
+                                    LOGGER.info("CONTADOR_TOTAL: {}", contador);
+                                    contador = 0;
+                                    LOGGER.info("EMPTY personFlux");
+                                }
+                            }).subscribe();
                 })
+                .retry(maxRetries)
                 .subscribe();
     }
 }

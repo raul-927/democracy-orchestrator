@@ -44,4 +44,13 @@ public class PersonAdapter implements PersonOut {
                 .retrieve()
                 .bodyToMono(Integer.class);
     }
+
+    @Override
+    public Mono<Long> selectCount() {
+        return webClient.get()
+                .uri(LOCAL_HOST_8082 + HUMAN_RESOURCES + PERSON + COUNT)
+                .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
+                .retrieve()
+                .bodyToMono(Long.class);
+    }
 }

@@ -162,18 +162,13 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
         return context -> {
             LOGGER.info("Executing branch1Task...");
             Person person = (Person)context.getMessageHeader("person");
-            if (person != null) {
-                investigationResult.setPerson(person);
-                professionService.selectProfession(person.getProfession())
+            professionService.selectProfession(person.getProfession())
                     .doFinally(signalType -> {
-                        LOGGER.info("Branch 1 task completed. Sending EVENT_BRANCH_1_COMPLETED.");
                         context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_1_COMPLETED).build())).subscribe();
+                        LOGGER.info("Branch 1 task completed. Sending EVENT_BRANCH_1_COMPLETED.");
+                        investigationResult.setPerson(person);
                     })
                     .subscribe();
-            } else {
-                LOGGER.warn("Branch 1: Person not found in ExtendedState.");
-                context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_1_COMPLETED).build())).subscribe();
-            }
         };
     }
 
@@ -182,22 +177,19 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
         return context -> {
             LOGGER.info("Executing branch2Task...");
             Person person = (Person)context.getMessageHeader("person");
-            if (person != null) {
-                CriminalRecord cr = new CriminalRecord();
-                cr.setPerson(person);
-                criminalRecordService.selectCriminalRecord(cr)
+            CriminalRecord cr = new CriminalRecord();
+            cr.setPerson(person);
+            criminalRecordService.selectCriminalRecord(cr)
                     .doFinally(signalType -> {
+                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_2_COMPLETED).build())).subscribe();
                         investigationResult.setCriminalRecords(criminalRecordList);
                         LOGGER.info("Branch 2 task completed. Sending EVENT_BRANCH_2_COMPLETED.");
-                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_2_COMPLETED).build())).subscribe();
+
                     })
-                        .doOnNext(crim->{
-                            criminalRecordList.add(crim);
-                        })
+                    .doOnNext(crim->{
+                        criminalRecordList.add(crim);
+                    })
                     .subscribe();
-            } else {
-                context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_2_COMPLETED).build())).subscribe();
-            }
         };
     }
 
@@ -206,29 +198,22 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
         return context -> {
             LOGGER.info("Executing branch3Task...");
             Person person = (Person)context.getMessageHeader("person");
-            if (person != null) {
-                Qualification qReq = new Qualification();
-                qReq.setPerson(person);
-                qualificationService.selectQualification(qReq)
-                        .doFinally(signalType -> {
-                            investigationResult.setQualifications(qualificationList);
-                            LOGGER.info("Branch 3 with person task completed. Sending EVENT_BRANCH_3_COMPLETED.");
-                            context.getStateMachine()
-                                    .sendEvent(Mono.just(MessageBuilder
-                                            .withPayload(EVENT_BRANCH_3_COMPLETED)
-                                            .setHeader("document", document)
-                                            .build()))
-                                    .subscribe();
-                        })
-                        .doOnNext(qualification -> {
-                            qualificationList.add(qualification);
-                            document =   qualification.getDocument();
-                        })
+            Qualification qReq = new Qualification();
+            qReq.setPerson(person);
+            qualificationService.selectQualification(qReq)
+                    .doFinally(signalType -> {
+                        context.getStateMachine()
+                                .sendEvent(Mono.just(MessageBuilder
+                                        .withPayload(EVENT_BRANCH_3_COMPLETED)
+                                        .build()))
+                                .subscribe();
+                        investigationResult.setQualifications(qualificationList);
+                        LOGGER.info("Branch 3 with person task completed. Sending EVENT_BRANCH_3_COMPLETED.");
+                    })
+                    .doOnNext(qualification -> {
+                        qualificationList.add(qualification);
+                    })
                     .subscribe();
-            } else {
-                LOGGER.info("Branch 3 with null person task completed. Sending EVENT_BRANCH_3_COMPLETED.");
-                context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_3_COMPLETED).build())).subscribe();
-            }
         };
     }
 
@@ -239,9 +224,9 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
             Person person = (Person)context.getMessageHeader("person");
             documentService.selectDocumentByCedula(person)
                     .doFinally(signalType -> {
+                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_4_COMPLETED).build())).subscribe();
                         LOGGER.info("Branch 4 with person task completed. Sending EVENT_BRANCH_4_COMPLETED.");
                         investigationResult.setDocuments(documents);
-                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_4_COMPLETED).build())).subscribe();
                     })
                     .doOnNext(doc ->{
                         documents.add(doc);
@@ -249,8 +234,6 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
                     .subscribe();
         };
     }
-
-
 
     @Bean
     public Action<ForkJoinStates, ForkJoinEvents> finalAction() {
@@ -265,11 +248,10 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
             resultService.calculateScore(investigationResult)
                     .doOnSuccess(success->{
                         LOGGER.info("End action sendResultsInvestigationAction...");
+                        context.getStateMachine().stopReactively();
                     })
                     .subscribe();
             personService.updatePerson(updatePerson).subscribe();
-            context.getStateMachine().stopReactively();
-
         };
     }
 }

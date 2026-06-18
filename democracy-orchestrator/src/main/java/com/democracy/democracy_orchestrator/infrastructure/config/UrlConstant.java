@@ -17,5 +17,6 @@ public class UrlConstant {
      public static final String SELECT ="/select";
      public static final String SELECT_BY_CEDULA = "/select-by-cedula";
      public static final String UPDATE = "/update";
+     public static final String COUNT = "/count";
 
 }

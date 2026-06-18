@@ -19,4 +19,9 @@ public class SelectPersonUseCase implements SelectPersonIn {
     public Flux<Person> selectPerson(Person person) {
         return this.personOut.selectPerson(person);
     }
+
+    @Override
+    public Mono<Long> selectCount() {
+        return personOut.selectCount();
+    }
 }
