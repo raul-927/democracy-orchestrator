@@ -35,7 +35,7 @@ public class PostulantController {
     @Autowired
     private PersonService personService;
 
-    private int contador;
+    private int counter;
 
     @PostMapping(
             value = "/investigation/select",
@@ -83,12 +83,12 @@ public class PostulantController {
 
                                 System.out.println("SELECT_COUNT: "+co);
                                 if(co != 0){
-                                    contador ++;
+                                    counter ++;
                                     forkTrigger.stopForkSaga();
                                     this.getFork(cedula);
                                 }else{
-                                    LOGGER.info("CONTADOR_TOTAL: {}", contador);
-                                    contador = 0;
+                                    LOGGER.info("TOTAL_COUNTER: {}", counter);
+                                    counter = 0;
                                     LOGGER.info("EMPTY personFlux");
                                 }
                             }).subscribe();
