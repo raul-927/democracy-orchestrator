@@ -60,10 +60,11 @@ public class TokenServiceImpl implements TokenService{
                         .build())
                 .headers((headers) -> headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .retrieve()
-                .bodyToFlux(KeyCloakToken.class)
-                .subscribe(tk ->{
-
-                });
+                .bodyToMono(KeyCloakToken.class)
+                .map(tk ->{
+                    return tk.getToken_type() + " "+tk.getAccess_token();
+                })
+                .subscribe();
 
 
 

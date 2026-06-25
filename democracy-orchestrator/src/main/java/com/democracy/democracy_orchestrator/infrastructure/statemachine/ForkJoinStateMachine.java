@@ -224,9 +224,9 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
             Person person = (Person)context.getMessageHeader("person");
             documentService.selectDocumentByCedula(person)
                     .doFinally(signalType -> {
-                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_4_COMPLETED).build())).subscribe();
-                        LOGGER.info("Branch 4 with person task completed. Sending EVENT_BRANCH_4_COMPLETED.");
                         investigationResult.setDocuments(documents);
+                        LOGGER.info("Branch 4 with person task completed. Sending EVENT_BRANCH_4_COMPLETED.");
+                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_4_COMPLETED).build())).subscribe();
                     })
                     .doOnNext(doc ->{
                         documents.add(doc);
@@ -240,8 +240,6 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
         return context -> {
             LOGGER.info("¡PROCESO FORK/JOIN FINALIZADO CON ÉXITO!");
             investigationResult.setInvestigationId(UUID.randomUUID().toString());
-
-            LOGGER.info("Init action sendResultsInvestigationAction...");
             Person updatePerson = new Person();
             updatePerson.setCedula(investigationResult.getPerson().getCedula());
             updatePerson.setIsProcessed(true);

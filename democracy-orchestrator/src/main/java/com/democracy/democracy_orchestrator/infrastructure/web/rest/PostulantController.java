@@ -35,7 +35,7 @@ public class PostulantController {
     @Autowired
     private PersonService personService;
 
-    private int counter;
+    private int retries;
 
     @PostMapping(
             value = "/investigation/select",
@@ -63,8 +63,8 @@ public class PostulantController {
             produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
     public  void getFork(@RequestBody int cedula) {
         int maxRetries = 3;
-        Flux<Person> personFlux = personService.selectPerson(new Person().setIsProcessed(false));
-        personFlux
+
+        personService.selectPerson(new Person().setIsProcessed(false))
                 .doOnRequest(request->{
                     LOGGER.info("DO_ON_REQUEST...");
                     forkTrigger.initForkSaga();
@@ -73,22 +73,23 @@ public class PostulantController {
                     forkTrigger.sendEventFork("START_FORK", Mono.just(
                             MessageBuilder.withPayload(ForkJoinEvents.START_FORK)
                                     .setHeader("person", item)
+                                    .setHeader("totalRetries", retries)
                                     .build()));
                     return item;
                 })
                 .delayElements(Duration.ofMillis(100))
                 .thenEmpty(em ->{
                     personService.selectCount()
-                            .doOnSuccess(co ->{
+                            .doOnSuccess(co->{
 
                                 System.out.println("SELECT_COUNT: "+co);
-                                if(co != 0){
-                                    counter ++;
+                                if(co > 0){
+                                    retries ++;
                                     forkTrigger.stopForkSaga();
                                     this.getFork(cedula);
                                 }else{
-                                    LOGGER.info("TOTAL_COUNTER: {}", counter);
-                                    counter = 0;
+                                    LOGGER.info("TOTAL_RETRIES: {}", retries);
+                                    retries = 0;
                                     LOGGER.info("EMPTY personFlux");
                                 }
                             }).subscribe();
