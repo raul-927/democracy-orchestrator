@@ -16,10 +16,13 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
     private static final String NOT_CALIFICATIONS_TITLE = "/ Se verifica que no contiene Calificaciones en sus diplomas";
     private static final String YES_CALIFICATIONS_TITLE = " / Se verifica y se aprueban las calificaciones de sus diplomas";
     private static final String DOCUMENTATION_NO_OK= " / Se verifica que no contiene documentación";
+    private static final String DOCUMENTATION_NOT_VALID= " / Se verifica que los documentos presentados no están validados";
     private static final String DOCUMENTATION_OK = " / Se verifica y se aprueban los documentos presentados";
     private static final String SCORE_NO_OK = "/ El puntaje no supera el límite mínimo necesario";
 
     private int score;
+    private boolean isDoc;
+    private String observation = "";
     private final InvestigationResultOut investigationResultOut;
 
     public CalculateScoreUseCase(InvestigationResultOut investigationResultOut) {
@@ -34,7 +37,7 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         investigationResult.setInvestigationId(investigation.getInvestigationId());
         investigationResult.setCedula(investigation.getPerson().getCedula());
         investigationResult.setIsApprove(true);
-        String observation = "";
+
         score = 0;
         if(investigation.getCriminalRecords() == null || investigation.getCriminalRecords().isEmpty()){
             observation = NO_CRIMINAL_RECORD;
@@ -60,12 +63,19 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
             });
         }
         if(investigation.getDocuments()!=null && !investigation.getDocuments().isEmpty()){
-            observation = observation.concat(DOCUMENTATION_OK);
             investigation.getDocuments().forEach(d ->{
                 if(d.isDocumentApproved()){
+                    isDoc = true;
                     score ++;
+                } else{
+                    isDoc = false;
                 }
             });
+            if(isDoc){
+                observation = observation.concat(DOCUMENTATION_OK);
+            } else {
+                observation = observation.concat(DOCUMENTATION_NOT_VALID);
+            }
         }else {
             observation = observation.concat(DOCUMENTATION_NO_OK);
         }
