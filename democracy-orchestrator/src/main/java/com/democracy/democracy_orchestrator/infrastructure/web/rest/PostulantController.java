@@ -115,8 +115,8 @@ public class PostulantController {
                 forkTrigger.sendEventFork("START_FORK", Mono.just(message));
 
                 // En Java 22, este sleep cede el control inmediatamente a otros procesos de la JVM.
-                // Cero consumo de hilos reales del sistema operativo durante los 1.5 segundos.
-                Thread.sleep(Duration.ofMillis(100));
+                // Cero consumo de hilos reales del sistema operativo durante los 0.5 segundos.
+                Thread.sleep(Duration.ofMillis(500));
 
                 LOGGER.info("Ventana de tiempo cerrada para cédula: {}. Reiniciando máquina...", nextPerson.getCedula());
                 forkTrigger.stopForkSaga();
