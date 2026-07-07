@@ -18,7 +18,6 @@ import reactor.core.publisher.Mono;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.List;
@@ -29,6 +28,8 @@ import java.util.List;
 public class PostulantController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostulantController.class);
+    private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+
 
     @Autowired
     private PostulantTrigger postulantTrigger;
@@ -70,34 +71,33 @@ public class PostulantController {
         final int maxRetries = 3;
 
         return Mono.defer(() -> {
-            LOGGER.info("Petición HTTP recibida. Desacoplando procesamiento secuencial...");
+            LOGGER.info("Petición HTTP recibida. Despachando lote en un Virtual Thread de Java 22...");
 
-            // Ejecutamos en un pool de hilos elástico para no bloquear la respuesta HTTP
-            Executors.newSingleThreadExecutor().submit(() -> {
+            // Asignamos la tarea al Executor de Hilos Virtuales
+            virtualThreadExecutor.submit(() -> {
                 try {
                     executeDynamicBatchProcessing(0, maxRetries);
                 } catch (Exception e) {
-                    LOGGER.error("Error crítico en el lote asíncrono dinámico", e);
+                    LOGGER.error("Error crítico en el procesamiento asíncrono con Virtual Threads", e);
                 }
             });
 
+            // Liberamos el hilo de la petición HTTP inmediatamente
             return Mono.empty();
         });
     }
 
     private void executeDynamicBatchProcessing(final int currentRetry, final int maxRetries) {
-        LOGGER.info("Iniciando verificación de registros pendientes en base de datos...");
+        LOGGER.info("Virtual Thread activo. Verificando registros pendientes...");
 
         while (true) {
-            // 1. IMPORTANTE: Consultamos SIEMPRE el flujo fresco de la BD.
-            // Tomamos únicamente el primer registro que encuentre con 'isProcessed = false'
+            // Consultamos el registro fresco de la BD de forma no bloqueante para el sistema operativo
             var nextPerson = personService.selectPerson(new Person().setIsProcessed(false))
-                    .next() // Toma solo el primer elemento emitido (Mono<Person>)
+                    .next()
                     .block();
 
-            // Si ya no quedan registros con 'false', el lote ha terminado con éxito
             if (nextPerson == null) {
-                LOGGER.info("SAGA TOTAL FINALIZADA: No quedan más personas por procesar en la BD.");
+                LOGGER.info("SAGA TOTAL FINALIZADA: No quedan más personas pendientes en la BD.");
                 forkTrigger.stopForkSaga();
                 return;
             }
@@ -105,7 +105,6 @@ public class PostulantController {
             LOGGER.info("Procesando de forma aislada la cédula: {}", nextPerson.getCedula());
 
             try {
-                // 2. Inicializamos la máquina de estados exclusivamente para esta persona
                 forkTrigger.initForkSaga();
 
                 var message = MessageBuilder.withPayload(ForkJoinEvents.START_FORK)
@@ -113,36 +112,31 @@ public class PostulantController {
                         .setHeader("totalRetries", currentRetry)
                         .build();
 
-                // 3. Despachamos el evento
                 forkTrigger.sendEventFork("START_FORK", Mono.just(message));
 
-                // 4. Tiempo de espera físico para que los Actions ejecuten las ramas y actualicen la BD a true
-                Thread.sleep(100);
+                // En Java 22, este sleep cede el control inmediatamente a otros procesos de la JVM.
+                // Cero consumo de hilos reales del sistema operativo durante los 1.5 segundos.
+                Thread.sleep(Duration.ofMillis(100));
 
-                LOGGER.info("Ventana de tiempo cerrada para cédula: {}. Limpiando máquina...", nextPerson.getCedula());
-
-                // 5. Destruimos la instancia de la máquina para eliminar cualquier residuo de estado o índices
+                LOGGER.info("Ventana de tiempo cerrada para cédula: {}. Reiniciando máquina...", nextPerson.getCedula());
                 forkTrigger.stopForkSaga();
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                LOGGER.error("El proceso por lotes dinámico fue interrumpido", e);
+                LOGGER.error("El Virtual Thread fue interrumpido", e);
                 return;
             } catch (Exception e) {
-                LOGGER.error("Error procesando de forma aislada la cédula: {}", nextPerson.getCedula(), e);
-                // Si un registro falla críticamente y no cambia a 'true', rompemos el bucle para evitar bucles infinitos
+                LOGGER.error("Error procesando cédula: {}", nextPerson.getCedula(), e);
                 break;
             }
         }
 
-        // 6. Zona de Control de Reintentos (si quedaron registros huérfanos por errores o caídas)
         Long remainingCount = personService.selectCount().block();
         if (remainingCount != null && remainingCount > 0 && currentRetry < maxRetries) {
-            LOGGER.warn("Se detectaron {} registros estancados. Iniciando reintento del lote. Intento: {}", remainingCount, currentRetry + 1);
+            LOGGER.warn("Registros estancados detectados ({}). Reintentando lote. Intento: {}", remainingCount, currentRetry + 1);
             executeDynamicBatchProcessing(currentRetry + 1, maxRetries);
         } else if (remainingCount != null && remainingCount > 0) {
-            LOGGER.error("Se alcanzó el límite de reintentos ({}) y aún quedan {} registros sin procesar.", maxRetries, remainingCount);
+            LOGGER.error("Límite de reintentos alcanzado ({}). Quedan {} registros sin procesar.", maxRetries, remainingCount);
         }
     }
-
 }
