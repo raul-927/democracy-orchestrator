@@ -31,7 +31,6 @@ public class DocumentUseCase implements SelectDocumentIn {
             count++;
         })
                 .doOnComplete(()->{
-                    System.out.println("COUNT: "+count + ", CEDULA: "+person.getCedula());
                 }).subscribe();
         return documentOut.selectDocumentByCedula(person);
     }

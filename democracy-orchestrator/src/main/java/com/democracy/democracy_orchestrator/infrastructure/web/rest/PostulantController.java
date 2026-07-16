@@ -91,6 +91,7 @@ public class PostulantController {
         LOGGER.info("Virtual Thread activo. Verificando registros pendientes...");
 
         while (true) {
+            forkTrigger.initForkSaga();
             // Consultamos el registro fresco de la BD de forma no bloqueante para el sistema operativo
             var nextPerson = personService.selectPerson(new Person().setIsProcessed(false))
                     .next()
@@ -101,12 +102,10 @@ public class PostulantController {
                 forkTrigger.stopForkSaga();
                 return;
             }
-
+            LOGGER.info("--------------------------------START---------------------------------------------------------------");
             LOGGER.info("Procesando de forma aislada la cédula: {}", nextPerson.getCedula());
 
             try {
-                forkTrigger.initForkSaga();
-
                 var message = MessageBuilder.withPayload(ForkJoinEvents.START_FORK)
                         .setHeader("person", nextPerson)
                         .setHeader("totalRetries", currentRetry)
@@ -120,7 +119,7 @@ public class PostulantController {
 
                 LOGGER.info("Ventana de tiempo cerrada para cédula: {}. Reiniciando máquina...", nextPerson.getCedula());
                 forkTrigger.stopForkSaga();
-
+                LOGGER.info("--------------------------------END---------------------------------------------------------------");
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 LOGGER.error("El Virtual Thread fue interrumpido", e);
