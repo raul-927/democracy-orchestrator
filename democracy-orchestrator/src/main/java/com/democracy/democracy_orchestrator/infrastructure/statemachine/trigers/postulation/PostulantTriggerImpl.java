@@ -19,7 +19,7 @@ import reactor.core.publisher.Mono;
 public class PostulantTriggerImpl implements PostulantTrigger {
     Logger LOGGER = LoggerFactory.getLogger(PostulantTriggerImpl.class);
 
-    @Autowired
+    //@Autowired
     private StateMachineFactory<PostulationStates, PostulationEvents> orderStateMachineFactory;
     private StateMachine<PostulationStates, PostulationEvents> stateMachine;
 

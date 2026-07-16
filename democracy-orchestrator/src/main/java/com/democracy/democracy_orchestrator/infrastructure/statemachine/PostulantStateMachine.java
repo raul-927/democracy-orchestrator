@@ -4,6 +4,7 @@ import com.democracy.democracy_orchestrator.application.services.*;
 import com.democracy.democracy_orchestrator.domain.models.*;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.postulation.PostulationEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.postulation.PostulationStates;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation.PostulantTrigger;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.trigers.postulation.PostulantTriggerImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ public class PostulantStateMachine extends EnumStateMachineConfigurerAdapter<Pos
     Logger LOGGER = LoggerFactory.getLogger(PostulantStateMachine.class);
 
     @Autowired
-    private PostulantTriggerImpl postulantTrigger;
+    private PostulantTrigger postulantTrigger;
 
     @Autowired
     private PersonService personService;
