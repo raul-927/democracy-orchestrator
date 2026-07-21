@@ -104,7 +104,7 @@ public class PostulantController {
             }
             LOGGER.info("--------------------------------START---------------------------------------------------------------");
             LOGGER.info("Procesando de forma aislada la cédula: {}", nextPerson.getCedula());
-
+            LOGGER.info("CURRENT_THREAD: {}",Thread.currentThread().toString());
             try {
                 var message = MessageBuilder.withPayload(ForkJoinEvents.START_FORK)
                         .setHeader("person", nextPerson)
@@ -120,6 +120,7 @@ public class PostulantController {
                 LOGGER.info("Ventana de tiempo cerrada para cédula: {}. Reiniciando máquina...", nextPerson.getCedula());
                 forkTrigger.stopForkSaga();
                 LOGGER.info("--------------------------------END---------------------------------------------------------------");
+
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 LOGGER.error("El Virtual Thread fue interrumpido", e);
@@ -134,6 +135,7 @@ public class PostulantController {
         if (remainingCount != null && remainingCount > 0 && currentRetry < maxRetries) {
             LOGGER.warn("Registros estancados detectados ({}). Reintentando lote. Intento: {}", remainingCount, currentRetry + 1);
             executeDynamicBatchProcessing(currentRetry + 1, maxRetries);
+            LOGGER.info("CURRENT_RETRY: {}",currentRetry);
         } else if (remainingCount != null && remainingCount > 0) {
             LOGGER.error("Límite de reintentos alcanzado ({}). Quedan {} registros sin procesar.", maxRetries, remainingCount);
         }

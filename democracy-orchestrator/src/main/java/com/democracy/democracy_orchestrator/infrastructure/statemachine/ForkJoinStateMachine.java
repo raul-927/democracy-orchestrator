@@ -61,7 +61,9 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
 
     @Override
     public void configure(StateMachineConfigurationConfigurer<ForkJoinStates, ForkJoinEvents> config) throws Exception {
-        config.withConfiguration().listener(forkJoinListener());
+        config
+                .withConfiguration()
+                .listener(forkJoinListener());
     }
 
     @Override
