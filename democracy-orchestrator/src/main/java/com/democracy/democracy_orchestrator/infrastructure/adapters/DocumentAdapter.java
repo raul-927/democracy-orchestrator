@@ -10,7 +10,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
+import reactor.util.retry.Retry;
+
+import java.time.Duration;
 
 import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.*;
 
@@ -42,6 +46,9 @@ public class DocumentAdapter implements DocumentOut {
                 .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
                 .body(bodySelectDocumentByCedula)
                 .retrieve()
-                .bodyToFlux(Document.class);
+                .bodyToFlux(Document.class)
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
+                        .filter(throwable -> throwable instanceof WebClientResponseException)
+                        .onRetryExhaustedThrow((spec, signal) -> signal.failure()));
     }
 }

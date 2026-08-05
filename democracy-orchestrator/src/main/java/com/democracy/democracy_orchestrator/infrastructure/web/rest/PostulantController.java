@@ -41,7 +41,7 @@ public class PostulantController {
     private PersonService personService;
 
     private int retries;
-
+/*
     @PostMapping(
             value = "/investigation/select",
             produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
@@ -62,7 +62,7 @@ public class PostulantController {
                 .subscribe();
         return personFlux;
     }
-
+*/
     @PostMapping(
             value = "/investigation/fork",
             produces = MediaType.TEXT_EVENT_STREAM_VALUE

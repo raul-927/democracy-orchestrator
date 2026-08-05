@@ -85,6 +85,9 @@ public class CalculateScoreUseCase implements CalculateScoreIn {
         }
         investigationResult.setObservation(observation);
         investigationResult.setScore(score);
-        return investigationResultOut.calculateScore(investigationResult);
+        return investigationResultOut.calculateScore(investigationResult)
+                .doOnSuccess(s ->{
+                })
+                .doOnError(Throwable::getMessage);
     }
 }

@@ -6,10 +6,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import com.democracy.democracy_orchestrator.application.services.TokenService;
 import com.democracy.democracy_orchestrator.domain.models.CriminalRecord;
 import com.democracy.democracy_orchestrator.domain.ports.out.CriminalRecordOut;
+import reactor.util.retry.Retry;
+
+import java.time.Duration;
+
 import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.LOCAL_HOST_8082;
 import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.HUMAN_RESOURCES;
 import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.CRIMINAL_RECORD;
@@ -31,6 +36,9 @@ public class CriminalRecordAdapter implements CriminalRecordOut {
                 .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
                 .body(selectCriminalRecord)
                 .retrieve()
-                .bodyToFlux(CriminalRecord.class);
+                .bodyToFlux(CriminalRecord.class)
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
+                        .filter(throwable -> throwable instanceof WebClientResponseException)
+                        .onRetryExhaustedThrow((spec, signal) -> signal.failure()));
     }
 }

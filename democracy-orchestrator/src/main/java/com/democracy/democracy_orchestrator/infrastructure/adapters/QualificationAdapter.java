@@ -9,7 +9,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
+import reactor.util.retry.Retry;
+
+import java.time.Duration;
+
 import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.LOCAL_HOST_8082;
 import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.HUMAN_RESOURCES;
 import static com.democracy.democracy_orchestrator.infrastructure.config.UrlConstant.QUALIFICATION;
@@ -32,6 +37,9 @@ public class QualificationAdapter implements QualificationOut {
                 .headers((headers) -> headers.add("authorization", tokenService.obtainToken()))
                 .body(insertQualification)
                 .retrieve()
-                .bodyToFlux(Qualification.class);
+                .bodyToFlux(Qualification.class)
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
+                        .filter(throwable -> throwable instanceof WebClientResponseException)
+                        .onRetryExhaustedThrow((spec, signal) -> signal.failure()));
     }
 }

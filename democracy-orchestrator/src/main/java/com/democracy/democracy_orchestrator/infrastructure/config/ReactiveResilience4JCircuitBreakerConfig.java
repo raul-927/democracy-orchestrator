@@ -44,6 +44,7 @@ public class ReactiveResilience4JCircuitBreakerConfig {
 
     @Bean
     public ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory() {
+        LOGGER.info("Initialize reactiveResilience4JCircuitBreakerFactory()");
         ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory =
                 new ReactiveResilience4JCircuitBreakerFactory(circuitBreakerRegistry, timeLimiterRegistry, resilience4JConfigurationProperties);
         reactiveResilience4JCircuitBreakerFactory.configureCircuitBreakerRegistry(circuitBreakerRegistry);
@@ -52,6 +53,7 @@ public class ReactiveResilience4JCircuitBreakerConfig {
     }
 
     private Resilience4JConfigBuilder.Resilience4JCircuitBreakerConfiguration createResilience4JCircuitBreakerConfiguration(String id) {
+        LOGGER.info("Initialize createResilience4JCircuitBreakerConfiguration(String id)");
         CircuitBreaker circuitBreaker = circuitBreakerRegistry.circuitBreaker(id);
         CircuitBreakerConfig circuitBreakerConfig = circuitBreaker.getCircuitBreakerConfig();
         TimeLimiterConfig timeLimiterConfig = timeLimiterRegistry.timeLimiter(id)
