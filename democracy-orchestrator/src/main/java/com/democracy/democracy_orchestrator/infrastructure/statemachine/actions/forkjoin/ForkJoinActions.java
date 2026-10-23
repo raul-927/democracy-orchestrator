@@ -3,7 +3,6 @@ package com.democracy.democracy_orchestrator.infrastructure.statemachine.actions
 
 import com.democracy.democracy_orchestrator.application.services.*;
 import com.democracy.democracy_orchestrator.domain.models.*;
-import com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinStateMachine;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.forkjoin.ForkJoinEvents;
 import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.forkjoin.ForkJoinStates;
 import org.slf4j.Logger;
@@ -54,7 +53,6 @@ public class ForkJoinActions {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ForkJoinActions.class);
 
-
     @Bean
     public StateMachineListener<ForkJoinStates, ForkJoinEvents> forkJoinListener() {
         return new StateMachineListenerAdapter<ForkJoinStates, ForkJoinEvents>() {
@@ -67,7 +65,6 @@ public class ForkJoinActions {
         };
     }
 
-
     @Bean
     public Action<ForkJoinStates, ForkJoinEvents>startForkAction(){
         return context->{
@@ -79,8 +76,6 @@ public class ForkJoinActions {
             LOGGER.info("Initialize investigationResult...");
         };
     }
-
-
 
     @Bean
     public Action<ForkJoinStates, ForkJoinEvents> branch1Task() {
@@ -96,7 +91,6 @@ public class ForkJoinActions {
                     .subscribe();
         };
     }
-
     @Bean
     public Action<ForkJoinStates, ForkJoinEvents> branch2Task() {
         return context -> {
@@ -117,7 +111,6 @@ public class ForkJoinActions {
                     .subscribe();
         };
     }
-
     @Bean
     public Action<ForkJoinStates, ForkJoinEvents> branch3Task() {
         return context -> {
@@ -141,7 +134,6 @@ public class ForkJoinActions {
                     .subscribe();
         };
     }
-
     @Bean
     public Action<ForkJoinStates, ForkJoinEvents> branch4Task() {
         return context -> {
@@ -159,7 +151,6 @@ public class ForkJoinActions {
                     .subscribe();
         };
     }
-
     @Bean
     public Action<ForkJoinStates, ForkJoinEvents> finalAction() {
         return context -> {
@@ -177,6 +168,4 @@ public class ForkJoinActions {
             personService.updatePerson(updatePerson).subscribe();
         };
     }
-
-
 }
