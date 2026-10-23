@@ -1,0 +1,182 @@
+package com.democracy.democracy_orchestrator.infrastructure.statemachine.actions.forkjoin;
+
+
+import com.democracy.democracy_orchestrator.application.services.*;
+import com.democracy.democracy_orchestrator.domain.models.*;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.ForkJoinStateMachine;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.events.forkjoin.ForkJoinEvents;
+import com.democracy.democracy_orchestrator.infrastructure.statemachine.states.forkjoin.ForkJoinStates;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.action.Action;
+import org.springframework.statemachine.listener.StateMachineListener;
+import org.springframework.statemachine.listener.StateMachineListenerAdapter;
+import org.springframework.statemachine.state.State;
+import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import static com.democracy.democracy_orchestrator.infrastructure.statemachine.events.forkjoin.ForkJoinEvents.*;
+import static com.democracy.democracy_orchestrator.infrastructure.statemachine.events.forkjoin.ForkJoinEvents.EVENT_BRANCH_4_COMPLETED;
+
+@Configuration
+public class ForkJoinActions {
+
+    @Autowired
+    private PersonService personService;
+
+    @Autowired
+    private ProfessionService professionService;
+
+    @Autowired
+    private CriminalRecordService criminalRecordService;
+
+    @Autowired
+    private QualificationService qualificationService;
+
+    @Autowired
+    private DocumentService documentService;
+
+    @Autowired
+    private InvestigationResultService resultService;
+
+    private Investigation investigationResult;
+    private List<Qualification> qualificationList;
+    private List<CriminalRecord> criminalRecordList;
+    private List<Document> documents;
+    private Document document;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ForkJoinActions.class);
+
+
+    @Bean
+    public StateMachineListener<ForkJoinStates, ForkJoinEvents> forkJoinListener() {
+        return new StateMachineListenerAdapter<ForkJoinStates, ForkJoinEvents>() {
+            @Override
+            public void stateChanged(State<ForkJoinStates, ForkJoinEvents> from, State<ForkJoinStates, ForkJoinEvents> to) {
+                if (to != null) {
+                    LOGGER.info("STATE_CHANGED: {}. Active IDs: {}", to.getId(), to.getIds());
+                }
+            }
+        };
+    }
+
+
+    @Bean
+    public Action<ForkJoinStates, ForkJoinEvents>startForkAction(){
+        return context->{
+            investigationResult = new Investigation();
+            qualificationList = new ArrayList<>();
+            criminalRecordList = new ArrayList<>();
+            documents = new ArrayList<>();
+            document = new Document();
+            LOGGER.info("Initialize investigationResult...");
+        };
+    }
+
+
+
+    @Bean
+    public Action<ForkJoinStates, ForkJoinEvents> branch1Task() {
+        return context -> {
+            LOGGER.info("Executing branch1Task...");
+            Person person = (Person)context.getMessageHeader("person");
+            professionService.selectProfession(person.getProfession())
+                    .doFinally(signalType -> {
+                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_1_COMPLETED).build())).subscribe();
+                        LOGGER.info("Branch 1 task completed. Sending EVENT_BRANCH_1_COMPLETED.");
+                        investigationResult.setPerson(person);
+                    })
+                    .subscribe();
+        };
+    }
+
+    @Bean
+    public Action<ForkJoinStates, ForkJoinEvents> branch2Task() {
+        return context -> {
+            LOGGER.info("Executing branch2Task...");
+            Person person = (Person)context.getMessageHeader("person");
+            CriminalRecord cr = new CriminalRecord();
+            cr.setPerson(person);
+            criminalRecordService.selectCriminalRecord(cr)
+                    .doFinally(signalType -> {
+                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_2_COMPLETED).build())).subscribe();
+                        investigationResult.setCriminalRecords(criminalRecordList);
+                        LOGGER.info("Branch 2 task completed. Sending EVENT_BRANCH_2_COMPLETED.");
+
+                    })
+                    .doOnNext(crim->{
+                        criminalRecordList.add(crim);
+                    })
+                    .subscribe();
+        };
+    }
+
+    @Bean
+    public Action<ForkJoinStates, ForkJoinEvents> branch3Task() {
+        return context -> {
+            LOGGER.info("Executing branch3Task...");
+            Person person = (Person)context.getMessageHeader("person");
+            Qualification qReq = new Qualification();
+            qReq.setPerson(person);
+            qualificationService.selectQualification(qReq)
+                    .doFinally(signalType -> {
+                        context.getStateMachine()
+                                .sendEvent(Mono.just(MessageBuilder
+                                        .withPayload(EVENT_BRANCH_3_COMPLETED)
+                                        .build()))
+                                .subscribe();
+                        investigationResult.setQualifications(qualificationList);
+                        LOGGER.info("Branch 3 with person task completed. Sending EVENT_BRANCH_3_COMPLETED.");
+                    })
+                    .doOnNext(qualification -> {
+                        qualificationList.add(qualification);
+                    })
+                    .subscribe();
+        };
+    }
+
+    @Bean
+    public Action<ForkJoinStates, ForkJoinEvents> branch4Task() {
+        return context -> {
+            LOGGER.info("Executing branch4Task...");
+            Person person = (Person)context.getMessageHeader("person");
+            documentService.selectDocumentByCedula(person)
+                    .doFinally(signalType -> {
+                        investigationResult.setDocuments(documents);
+                        LOGGER.info("Branch 4 with person task completed. Sending EVENT_BRANCH_4_COMPLETED.");
+                        context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(EVENT_BRANCH_4_COMPLETED).build())).subscribe();
+                    })
+                    .doOnNext(doc ->{
+                        documents.add(doc);
+                    })
+                    .subscribe();
+        };
+    }
+
+    @Bean
+    public Action<ForkJoinStates, ForkJoinEvents> finalAction() {
+        return context -> {
+            LOGGER.info("¡PROCESO FORK/JOIN FINALIZADO CON ÉXITO!");
+            investigationResult.setInvestigationId(UUID.randomUUID().toString());
+            Person updatePerson = new Person();
+            updatePerson.setCedula(investigationResult.getPerson().getCedula());
+            updatePerson.setIsProcessed(true);
+            resultService.calculateScore(investigationResult)
+                    .doOnSuccess(success->{
+                        LOGGER.info("End action sendResultsInvestigationAction...");
+                        context.getStateMachine().stopReactively();
+                    })
+                    .subscribe();
+            personService.updatePerson(updatePerson).subscribe();
+        };
+    }
+
+
+}

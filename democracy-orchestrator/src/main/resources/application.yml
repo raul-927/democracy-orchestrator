@@ -3,7 +3,7 @@ spring:
     virtual:
       enabled: true
   main:
-    allow-circular-references: false
+    allow-circular-references: true
   boot:
     admin:
       client:
