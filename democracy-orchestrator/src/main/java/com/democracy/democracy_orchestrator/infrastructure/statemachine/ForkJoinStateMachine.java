@@ -79,25 +79,25 @@ public class ForkJoinStateMachine extends EnumStateMachineConfigurerAdapter<Fork
                 .withStates()
                     .parent(FORK_POINT)
                     .initial(BRANCH_1)
-                    .state(BRANCH_1, branch1Task(), null)
+                    .state(BRANCH_1, branch1Task(), null) //La tarea se ejecuta al iniciar el estado BRANCH_1
                     .end(BRANCH_1_DONE)
                     .and()
                 .withStates()
                     .parent(FORK_POINT)
                     .initial(BRANCH_2)
-                    .state(BRANCH_2, branch2Task(), null)
+                    .state(BRANCH_2, branch2Task(), null) //La tarea se ejecuta al iniciar el estado BRANCH_2
                     .end(BRANCH_2_DONE)
                     .and()
                 .withStates()
                     .parent(FORK_POINT)
                     .initial(BRANCH_3)
-                    .state(BRANCH_3, branch3Task(), null)
+                    .state(BRANCH_3, branch3Task(), null) //La tarea se ejecuta al iniciar el estado BRANCH_3
                     .end(BRANCH_3_DONE)
                 .and()
                 .withStates()
                 .parent(FORK_POINT)
                 .initial(BRANCH_4)
-                .state(BRANCH_4, branch4Task(), null)
+                .state(BRANCH_4, branch4Task(), null) //La tarea se ejecuta al iniciar el estado BRANCH_4
                 .end(BRANCH_4_DONE)
         ;
     }

@@ -104,7 +104,7 @@ public class PostulantController {
             }
             LOGGER.info("--------------------------------START---------------------------------------------------------------");
             LOGGER.info("Procesando de forma aislada la cédula: {}", nextPerson.getCedula());
-            LOGGER.info("CURRENT_THREAD: {}",Thread.currentThread().toString());
+            LOGGER.info("CURRENT_THREAD: {} {}",Thread.currentThread().toString(), nextPerson.getCedula());
             try {
                 var message = MessageBuilder.withPayload(ForkJoinEvents.START_FORK)
                         .setHeader("person", nextPerson)
