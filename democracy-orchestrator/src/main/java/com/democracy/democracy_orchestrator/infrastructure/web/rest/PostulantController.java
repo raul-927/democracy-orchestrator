@@ -42,31 +42,8 @@ public class PostulantController {
 
     private int retries;
 
-    public PostulantController() {
-    }
+    public PostulantController() {}
 
-    /*
-        @PostMapping(
-                value = "/investigation/select",
-                produces = {MediaType.TEXT_EVENT_STREAM_VALUE})
-        public  Flux<Person> getInvestigation(@RequestBody List<Person> person) {
-            Flux<Person> personFlux = personService.selectPerson(new Person().setIsProcessed(false));
-            personFlux
-                    .map(item->{
-                        postulantTrigger.initPostulationSaga();
-                        postulantTrigger.sendEvent("VALIDATE_PERSON", Mono.just(
-                                MessageBuilder.withPayload(PostulationEvents.VALIDATE_PERSON)
-                                        .setHeader("cedula", item.getCedula())
-                                        .build()));
-                        return item;
-                    })
-                    .thenEmpty(em ->{
-                        LOGGER.info("EMPTY personFlux");
-                    })
-                    .subscribe();
-            return personFlux;
-        }
-    */
     @PostMapping(
             value = "/investigation/fork",
             produces = MediaType.TEXT_EVENT_STREAM_VALUE
