@@ -17,14 +17,14 @@ public class ForkTriggerImpl implements ForkTrigger {
     private static final Logger LOGGER = LoggerFactory.getLogger(ForkTriggerImpl.class);
 
     @Autowired
-    private StateMachineFactory<ForkJoinStates, ForkJoinEvents> forkStateMachineFactory;
+    private StateMachineFactory<ForkJoinStates, ForkJoinEvents> forkJoinStateMachineFactory;
     
     private StateMachine<ForkJoinStates, ForkJoinEvents> stateMachine;
 
     @Override
     public void initForkSaga() {
         LOGGER.info("Initializing initForkSaga");
-        stateMachine = forkStateMachineFactory.getStateMachine();
+        stateMachine = forkJoinStateMachineFactory.getStateMachine();
         stateMachine.startReactively().block(); // Asegura que la máquina arranque antes de continuar
         LOGGER.info("StateMachine started successfully. Current state: {}", stateMachine.getState().getId());
     }
